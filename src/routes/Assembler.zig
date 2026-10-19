@@ -164,8 +164,8 @@ pub const CodexChatMessage = struct {
     text: []const u8,
 };
 
-var claude_chat_history = Vapor.persist.Array(ClaudeChatMessage);
-var codex_chat_history = Vapor.persist.Array(CodexChatMessage);
+var claude_chat_history = Vapor.persist.array(ClaudeChatMessage);
+var codex_chat_history = Vapor.persist.array(CodexChatMessage);
 pub var chat_history: ChatHistory = .{ .default = null };
 
 const ChatHistory = union(enum) {
@@ -265,7 +265,7 @@ const Tab = enum {
         };
     }
 
-    pub fn icon(self: Tab) *const Vapor.IconTokens {
+    pub fn icon(self: Tab) Vapor.IconTokens {
         return switch (self) {
             .generate => .columns_gap,
             .templates => .grid_3x3,
@@ -301,7 +301,7 @@ const NavItem = enum {
         };
     }
 
-    pub fn icon(self: NavItem) *const Vapor.IconTokens {
+    pub fn icon(self: NavItem) Vapor.IconTokens {
         return switch (self) {
             .assembler => .cassette,
             .planner => .hammer,
@@ -354,7 +354,7 @@ const HistoryEntry = struct {
     model: []const u8,
     provider: []const u8,
 };
-var history = Vapor.persist.Array(HistoryEntry);
+var history = Vapor.persist.array(HistoryEntry);
 const generation_history_key = "assembler_generation_history_v1";
 var showing_history_diff: bool = false;
 
@@ -385,7 +385,7 @@ const FileInfo = struct {
     size: u32,
     url: []const u8,
 };
-var file_list = Vapor.persist.Array(FileInfo);
+var file_list = Vapor.persist.array(FileInfo);
 
 // =============================================================================
 // INIT
@@ -499,7 +499,7 @@ fn makeTimestamp() []const u8 {
 }
 
 fn makeLineDiff(current: []const u8, target: []const u8) []const u8 {
-    var out = Vapor.frame.Array(u8);
+    var out = Vapor.frame.array(u8);
     var a_it = std.mem.splitScalar(u8, current, '\n');
     var b_it = std.mem.splitScalar(u8, target, '\n');
 
@@ -666,7 +666,7 @@ fn submitPrompt() void {
 }
 
 fn parseChatHistory(messages: ChatHistory) []const u8 {
-    var content = Vapor.frame.Array(u8);
+    var content = Vapor.frame.array(u8);
     switch (messages) {
         .claude => {
             for (messages.claude.items) |message| {
@@ -727,9 +727,9 @@ pub fn applyAssistantContent(content_raw: []const u8) void {
     is_generating = false;
 }
 
-fn handleClaudeResponse(resp: Vapor.Kit.Response) void {
+fn handleClaudeResponse(resp: Vapor.Fetch.Result) void {
     switch (resp) {
-        .Ok => |ok| {
+        .ok => |ok| {
             const parsed = api.parseResp(api.MessageResponse, ok.body, Vapor.frame.arena()) catch |err| {
                 Opaque.Toast.err(.{ .title = "Parsing Error", .description = Vapor.frame.fmt("{any}", .{err}) });
                 return;
@@ -742,16 +742,16 @@ fn handleClaudeResponse(resp: Vapor.Kit.Response) void {
             }
             applyAssistantContent(content);
         },
-        .Err => |er| {
+        .err => |er| {
             current_code = Vapor.fmtln("// Error: {s}", .{er.message});
             active_tab = .generate;
         },
     }
 }
 
-fn handleOpenAIResponse(resp: Vapor.Kit.Response) void {
+fn handleOpenAIResponse(resp: Vapor.Fetch.Result) void {
     switch (resp) {
-        .Ok => |ok| {
+        .ok => |ok| {
             const parsed = api.parseResp(api.OpenAIResponse, ok.body, Vapor.frame.arena()) catch |err| {
                 Opaque.Toast.err(.{ .title = "Parsing Error", .description = Vapor.frame.fmt("{any}", .{err}) });
                 return;
@@ -765,17 +765,17 @@ fn handleOpenAIResponse(resp: Vapor.Kit.Response) void {
             }
             applyAssistantContent(parsed.choices[0].message.content);
         },
-        .Err => |er| {
+        .err => |er| {
             current_code = Vapor.fmtln("// Error: {s}", .{er.message});
             active_tab = .generate;
         },
     }
 }
 
-fn handleGenerateResponse(resp: Vapor.Kit.Response) void {
+fn handleGenerateResponse(resp: Vapor.Fetch.Result) void {
     is_generating = false;
     switch (resp) {
-        .Ok => |ok| {
+        .ok => |ok| {
             current_code = api.unescapeJson(ok.body);
             has_generated = true;
             code_highlighter.recompile(current_code) catch {};
@@ -788,7 +788,7 @@ fn handleGenerateResponse(resp: Vapor.Kit.Response) void {
             addGenerationHistory(prompt_input, current_code, "code", model, provider);
             active_tab = .generate;
         },
-        .Err => |er| {
+        .err => |er| {
             current_code = Vapor.fmtln("// Error: {s}", .{er.message});
             active_tab = .generate;
         },
@@ -850,12 +850,12 @@ fn openPlanner() void {
     // Store the generated markdown so the Planner page can load it
     loadPlanner(markdown_source);
     Vapor.store("assembler-plan", markdown_source);
-    Vapor.Kit.navigate("/planner");
+    Vapor.navigate("/planner");
 }
 
 fn openPlayground() void {
     loadFileFromChat();
-    Vapor.Kit.navigate("/playground");
+    Vapor.navigate("/playground");
 }
 
 fn selectModel(i: usize) void {
@@ -872,14 +872,14 @@ fn upload(evt: *Vapor.Event) void {
     var reader: Vapor.FileReader = .init(evt);
 
     const info = reader.fileInfo(0) catch |err| {
-        Vapor.printErr("Failed to get file info: {any}", .{err});
+        Vapor.print(.err, "Failed to get file info: {any}", .{err});
         return;
     };
 
     std.log.info("file {s} of type {s} with size {d}", .{ info.name, info.type, info.size });
 
     const file = Vapor.persist.dupe(reader.createURLfromFile(0) catch |err| {
-        Vapor.printErr("Failed to create object URL: {any}", .{err});
+        Vapor.print(.err, "Failed to create object URL: {any}", .{err});
         unreachable;
     });
 
@@ -955,7 +955,7 @@ const SIDEBAR_COLLAPSED = 40 + 10 + 10;
 const SIDEBAR_EXPANDED = 240;
 
 pub fn renderSidebar() void {
-    const route = Vapor.Kit.getWindowPath() orelse "/";
+    const route = Vapor.currentPath();
     NavItem.setActive(route);
     const w: Vapor.Types.Sizing = if (sidebar_expanded) .px(SIDEBAR_EXPANDED) else .px(SIDEBAR_COLLAPSED);
 
@@ -984,7 +984,7 @@ pub fn renderSidebar() void {
                 Vapor.Svg(.{ .svg = @embedFile("assembler_logo.svg"), .override = true })
                     .fill(.palette(.text))
                     .layout(.center)
-                    .size(.px(40))
+                    .size(.squarePx(40))
                     .end();
             });
 
@@ -1014,7 +1014,7 @@ pub fn renderSidebar() void {
                     .height(.px(40))
                     .pointer()
                     .duration(150)
-                    .background(if (active) .transparentizeHex(.palette(.tint), 1) else .transparent)
+                    .background(if (active) .transparentize(.palette(.tint), 1) else .transparent)
                     .hover(.{
                         .background = if (active) .hex("#222160") else .palette(.highlight_color),
                     })
@@ -1058,19 +1058,19 @@ pub fn renderSidebar() void {
 
 /// Render the 4 decorative corner borders on the active nav item
 fn renderNavCorners() void {
-    const border_tl: Vapor.Types.BorderGrouped = if (!is_hovered) .sharp(.tblr(0, 1, 0, 1), .palette(.tint)) else .sharp(.tblr(1, 0, 1, 0), .hex("#222160"));
+    const border_tl: Vapor.Types.Border = if (!is_hovered) .sharp(.{ .bottom = 1, .right = 1 }, .palette(.tint)) else .sharp(.{ .top = 1, .left = 1 }, .hex("#222160"));
     const border_tl_pos: Vapor.Types.Position = if (!is_hovered) .tl(.px(-6), .px(-6), .absolute) else .tl(.px(-1), .px(-1), .absolute);
     Row().id("nav-button-top-left").pos(border_tl_pos).width(.px(6)).height(.px(6)).border(border_tl).children({});
 
-    const border_tr: Vapor.Types.BorderGrouped = if (!is_hovered) .sharp(.tblr(0, 1, 1, 0), .palette(.tint)) else .sharp(.tblr(1, 0, 0, 1), .hex("#222160"));
+    const border_tr: Vapor.Types.Border = if (!is_hovered) .sharp(.{ .bottom = 1, .left = 1 }, .palette(.tint)) else .sharp(.{ .top = 1, .right = 1 }, .hex("#222160"));
     const border_tr_pos: Vapor.Types.Position = if (!is_hovered) .tr(.px(-6), .px(-6), .absolute) else .tr(.px(-1), .px(-1), .absolute);
     Row().id("nav-button-top-right").pos(border_tr_pos).width(.px(6)).height(.px(6)).border(border_tr).children({});
 
-    const border_bl: Vapor.Types.BorderGrouped = if (!is_hovered) .sharp(.tblr(1, 0, 0, 1), .palette(.tint)) else .sharp(.tblr(0, 1, 1, 0), .hex("#222160"));
+    const border_bl: Vapor.Types.Border = if (!is_hovered) .sharp(.{ .top = 1, .right = 1 }, .palette(.tint)) else .sharp(.{ .bottom = 1, .left = 1 }, .hex("#222160"));
     const border_bl_pos: Vapor.Types.Position = if (!is_hovered) .bl(.px(-6), .px(-6), .absolute) else .bl(.px(-1), .px(-1), .absolute);
     Row().id("nav-button-bottom-left").pos(border_bl_pos).width(.px(6)).height(.px(6)).border(border_bl).children({});
 
-    const border_br: Vapor.Types.BorderGrouped = if (!is_hovered) .sharp(.tblr(1, 0, 1, 0), .palette(.tint)) else .sharp(.tblr(0, 1, 0, 1), .hex("#222160"));
+    const border_br: Vapor.Types.Border = if (!is_hovered) .sharp(.{ .top = 1, .left = 1 }, .palette(.tint)) else .sharp(.{ .bottom = 1, .right = 1 }, .hex("#222160"));
     const border_br_pos: Vapor.Types.Position = if (!is_hovered) .br(.px(-6), .px(-6), .absolute) else .br(.px(-1), .px(-1), .absolute);
     Row().id("nav-button-bottom-right").pos(border_br_pos).width(.px(6)).height(.px(6)).border(border_br).children({});
 }
@@ -1132,8 +1132,8 @@ fn renderFileAttachments() void {
                             .pos(.tl(.px(-12), .px(-12), .absolute))
                             .background(.palette(.background))
                             .pointer()
-                            .size(.px(24))
-                            .border(.simple(.palette(.border_color_light)))
+                            .size(.squarePx(24))
+                            .border(.thin(.palette(.border_color_light)))
                             .radius(.all(99))
                             .layout(.center)
                             .hover(.{ .transform = .scaleDecimal(1.05) })
@@ -1146,7 +1146,7 @@ fn renderFileAttachments() void {
                     }
                     if (image) {
                         Vapor.Image(.{ .src = file.url })
-                            .border(.simple(.palette(.border_color_light)))
+                            .border(.thin(.palette(.border_color_light)))
                             .radius(.all(4))
                             .duration(100)
                             .hover(.{
@@ -1157,7 +1157,7 @@ fn renderFileAttachments() void {
                     } else {
                         Stack()
                             .height(.clamp(0, 64, 64, .px))
-                            .border(.simple(.palette(.border_color_light)))
+                            .border(.thin(.palette(.border_color_light)))
                             .padding(.xy(4, 4))
                             .radius(.all(4))
                             .children({
@@ -1192,7 +1192,7 @@ fn renderPromptControls() void {
                         .text_color = .palette(.text),
                     })
                     .duration(120)
-                    .fontColor(.palette(.text_muted))
+                    .textColor(.palette(.text_muted))
                     .width(.px(32)).height(.px(32)).layout(.center).items(.{
                     Vapor.TextField(.file)
                         .a11y(.{ .label = "File Upload" })
@@ -1200,7 +1200,7 @@ fn renderPromptControls() void {
                         .pointer()
                         .layout(.center)
                         .width(.px(32))
-                        .onEventCtx(.change, upload, .{})
+                        .onEvent(.change, upload, .{})
                         .end(),
                     Icon(.plus_lg)
                         .fontSize(20),
@@ -1250,7 +1250,7 @@ fn renderPromptControls() void {
                         .fill(.palette(.text))
                         .hover(.{ .fill = .palette(.tint) })
                         .layout(.center)
-                        .size(.px(24))
+                        .size(.squarePx(24))
                         .end();
                 }),
             });
@@ -1301,14 +1301,14 @@ fn renderWordDisplay(font_size: u8, cell_width: f32) void {
 fn renderPromptCard(model_width: Vapor.Types.Sizing) void {
     _ = model_width;
     Stack()
-        .inlineStyleStr("view-transition-name: myWidget")
+        .inlineStyle("view-transition-name: myWidget", .{})
         .width(.percent(55))
         .spacing(24)
         .layout(.center)
         .mt(12)
         .padding(.all(16))
         .border(.round(.palette(.border_color_light), .all(0)))
-        .newShadow(Vapor.Types.NewShadow.init().dropSpread(0, 1, 8, 4, .transparentize(.black, 0.03)))
+        .shadow(Vapor.Types.NewShadow.init().dropSpread(0, 1, 8, 4, .transparentize(.black, 0.03)))
         .spacing(8)
         .children({
         renderFileAttachments();
@@ -1339,7 +1339,7 @@ fn renderPromptBar() void {
     Stack()
         .minWidth(.percent(30))
         .width(.expand)
-        .padding(.tblr(20, 20, 32, 32))
+        .padding(.xy(32, 20))
         .spacing(12)
         .layout(.top_center)
         .mt(256)
@@ -1389,14 +1389,14 @@ fn renderGenerateTab() void {
 
                 // Textarea card (split view uses full width)
                 Stack()
-                    .inlineStyleStr("view-transition-name: myWidget")
+                    .inlineStyle("view-transition-name: myWidget", .{})
                     .width(.percent(100))
                     .spacing(24)
                     .layout(.center)
                     .mt(12)
                     .padding(.all(16))
                     .border(.round(.palette(.border_color_light), .all(0)))
-                    .newShadow(Vapor.Types.NewShadow.init().dropSpread(0, 1, 8, 4, .transparentize(.black, 0.03)))
+                    .shadow(Vapor.Types.NewShadow.init().dropSpread(0, 1, 8, 4, .transparentize(.black, 0.03)))
                     .spacing(8)
                     .children({
                     renderFileAttachments();
@@ -1453,12 +1453,12 @@ fn renderOptionPill(pill: data.Pill, i: usize) void {
         .children({
         if (std.mem.eql(u8, pill.label, "learn")) {
             Vapor.Svg(.{ .svg = @embedFile("toolbox.svg") })
-                .size(.px(16))
+                .size(.squarePx(16))
                 .fill(.palette(.text))
                 .end();
         } else if (std.mem.eql(u8, pill.label, "assembler")) {
             Vapor.Svg(.{ .svg = @embedFile("assemble.svg") })
-                .size(.px(20))
+                .size(.squarePx(20))
                 .stroke(.palette(.text))
                 .fill(.transparent)
                 .end();
@@ -1498,7 +1498,7 @@ fn renderRunHistory() void {
         } else {
             Stack()
                 .width(.percent(100))
-                .scroll(.scroll_y())
+                .scroll(.scrollY())
                 .height(.percent(100))
                 .spacing(8)
                 .children({
@@ -1624,7 +1624,7 @@ fn renderCodePanel(_: *Sheet) void {
         // Body
         Stack()
             .width(.percent(100)).height(.grow)
-            .scroll(.scroll_y()).padding(.all(20))
+            .scroll(.scrollY()).padding(.all(20))
             .children({
             if (is_generating) {
                 renderGeneratingState();
@@ -1640,7 +1640,7 @@ fn renderCodePanel(_: *Sheet) void {
 }
 
 fn codeAction(
-    ico: *const Vapor.IconTokens,
+    ico: Vapor.IconTokens,
     label_text: []const u8,
     ico_color: Vapor.Types.Color,
     action: anytype,
@@ -1655,9 +1655,9 @@ fn codeAction(
         .fill(ico_color)
         .hover(.{ .background = .yellow, .text_color = .black, .fill = .black })
         .children({
-        if (ico == Vapor.IconTokens.codepen) {
+        if (std.mem.eql(u8, ico.web orelse "", Vapor.IconTokens.codepen.web.?)) {
             Vapor.Svg(.{ .svg = ico.svg.? })
-                .size(.px(16))
+                .size(.squarePx(16))
                 .end();
         } else {
             Icon(ico).font(11, 400, null).end();
@@ -1718,7 +1718,7 @@ fn render() void {
                     .height(.px(40))
                     .layout(.center)
                     .background(if (show_markdown) .palette(.tint) else .palette(.background))
-                    .fontColor(if (show_markdown) .white else .palette(.text))
+                    .textColor(if (show_markdown) .white else .palette(.text))
                     .duration(100)
                     .hover(.{ .background = .palette(.tint), .text_color = .white })
                     .pointer()
@@ -1733,7 +1733,7 @@ fn render() void {
                     .height(.px(40))
                     .layout(.center)
                     .background(if (show_code) .palette(.tint) else .palette(.background))
-                    .fontColor(if (show_code) .white else .palette(.text))
+                    .textColor(if (show_code) .white else .palette(.text))
                     .duration(100)
                     .hover(.{ .background = .palette(.tint), .text_color = .white })
                     .pointer()

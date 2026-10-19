@@ -98,7 +98,7 @@ pub const LEARN_SECTIONS = [_]LearnSection{
 
 pub const Pill = struct {
     label: []const u8,
-    icon: Vapor.IconType,
+    icon: Vapor.IconTokens,
 };
 
 pub const OPTION_PILLS = [_]Pill{

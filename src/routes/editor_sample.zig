@@ -34,7 +34,7 @@ const Note = struct {
 };
 
 // State
-var notes = Vapor.persist.Array(Note);
+var notes = Vapor.persist.array(Note);
 var next_id: u32 = 1;
 var selected_id: ?u32 = null;
 var title_input: []const u8 = "";
@@ -135,7 +135,7 @@ fn renderSidebar() void {
         .width(.px(280))
         .height(.percent(100))
         .background(Theme.black)
-        .border(.simple(Theme.primary))
+        .border(.thin(Theme.primary))
         .children({
 
         // Header
@@ -182,7 +182,7 @@ fn renderSidebar() void {
 
         // Notes list
         Stack()
-            .scroll(.scroll_y())
+            .scroll(.scrollY())
             .height(.expand)
             .children({
             if (notes.items.len == 0) {
@@ -244,7 +244,7 @@ fn renderNoteItem(note: Note) void {
             .padding(.all(4))
             .mt(8)
             .background(Vapor.Types.Color.transparent)
-            .border(.simple(if (is_selected) Theme.black else Theme.primary))
+            .border(.thin(if (is_selected) Theme.black else Theme.primary))
             .pointer()
             .hoverBackground(Theme.primary)
             .children({
@@ -261,7 +261,7 @@ fn renderEditor() void {
         .width(.expand)
         .height(.percent(100))
         .background(Theme.gray_100)
-        .border(.simple(Theme.black))
+        .border(.thin(Theme.black))
         .children({
         if (selected_id == null) {
             Center()
@@ -299,7 +299,7 @@ fn renderEditor() void {
                             .width(.expand)
                             .padding(.all(12))
                             .background(Theme.gray_100)
-                            .border(.simple(Theme.black))
+                            .border(.thin(Theme.black))
                             .font(18, 900, Theme.black)
                             .fontFamily("monospace")
                             .end();
@@ -315,9 +315,9 @@ fn renderEditor() void {
                         .children({
                         if (is_editing) {
                             Button(saveNote, .{})
-                                .padding(.tblr(8, 8, 16, 16))
+                                .padding(.xy(16, 8))
                                 .background(Theme.primary)
-                                .border(.simple(Theme.black))
+                                .border(.thin(Theme.black))
                                 .pointer()
                                 .hoverScale()
                                 .children({
@@ -328,9 +328,9 @@ fn renderEditor() void {
                             });
 
                             Button(cancelEditing, .{})
-                                .padding(.tblr(8, 8, 16, 16))
+                                .padding(.xy(16, 8))
                                 .background(Theme.gray_200)
-                                .border(.simple(Theme.black))
+                                .border(.thin(Theme.black))
                                 .pointer()
                                 .hoverScale()
                                 .children({
@@ -341,9 +341,9 @@ fn renderEditor() void {
                             });
                         } else {
                             Button(startEditing, .{})
-                                .padding(.tblr(8, 8, 16, 16))
+                                .padding(.xy(16, 8))
                                 .background(Theme.secondary)
-                                .border(.simple(Theme.black))
+                                .border(.thin(Theme.black))
                                 .pointer()
                                 .hoverScale()
                                 .children({
@@ -369,7 +369,7 @@ fn renderEditor() void {
                         .height(.percent(100))
                         .padding(.all(16))
                         .background(Theme.white)
-                        .border(.simple(Theme.black))
+                        .border(.thin(Theme.black))
                         .font(14, 400, Theme.black)
                         .fontFamily("monospace")
                         .whiteSpace(.pre)
@@ -380,12 +380,12 @@ fn renderEditor() void {
                 Stack()
                     .height(.expand)
                     .padding(.all(20))
-                    .scroll(.scroll_y())
+                    .scroll(.scrollY())
                     .children({
                     Stack()
                         .padding(.all(24))
                         .background(Theme.white)
-                        .border(.simple(Theme.black))
+                        .border(.thin(Theme.black))
                         .shadow(.card(Theme.shadow))
                         .children({
                         renderMarkdownPreview(preview_content);
@@ -398,7 +398,7 @@ fn renderEditor() void {
 
 fn renderMarkdownPreview(content: []const u8) void {
     // Simple markdown rendering
-    var lines = Vapor.Kit.split(content, "\n");
+    var lines = std.mem.splitSequence(u8, content, "\n");
 
     while (lines.next()) |line| {
         if (line.len == 0) {
@@ -407,25 +407,25 @@ fn renderMarkdownPreview(content: []const u8) void {
         }
 
         // Headings
-        if (Vapor.Kit.startsWith(line, "# ")) {
+        if (std.mem.startsWith(u8, line, "# ")) {
             Text(line[2..])
                 .font(28, 900, Theme.black)
                 .fontFamily("monospace")
                 .mb(16)
                 .end();
-        } else if (Vapor.Kit.startsWith(line, "## ")) {
+        } else if (std.mem.startsWith(u8, line, "## ")) {
             Text(line[3..])
                 .font(22, 900, Theme.black)
                 .fontFamily("monospace")
                 .mb(12)
                 .end();
-        } else if (Vapor.Kit.startsWith(line, "### ")) {
+        } else if (std.mem.startsWith(u8, line, "### ")) {
             Text(line[4..])
                 .font(18, 700, Theme.black)
                 .fontFamily("monospace")
                 .mb(10)
                 .end();
-        } else if (Vapor.Kit.startsWith(line, "- ")) {
+        } else if (std.mem.startsWith(u8, line, "- ")) {
             Row()
                 .spacing(8)
                 .mb(8)

@@ -45,7 +45,7 @@ const File = struct {
     editing: bool = false,
 };
 var selected_file: usize = 0;
-var files = Vapor.persist.Array(File);
+var files = Vapor.persist.array(File);
 
 // ============================================================================
 // Auto-close pairs (unchanged)
@@ -78,9 +78,9 @@ fn isClosingChar(c: u8) bool {
 // State
 // ============================================================================
 
-var text_area: Vapor.Binded = .{};
-var highlighter_layer: Vapor.Binded = .{};
-var editor_container: Vapor.Binded = .{};
+var text_area: Vapor.Element = .{};
+var highlighter_layer: Vapor.Element = .{};
+var editor_container: Vapor.Element = .{};
 
 var holding_meta: bool = false;
 var holding_ctrl: bool = false;
@@ -101,7 +101,7 @@ pub fn init() void {
         .name = "main.zig",
         // .content = @embedFile("main_sample.zig"),
         .file_name = "main_sample.zig",
-        .buffer = Vapor.persist.Array(u8),
+        .buffer = Vapor.persist.array(u8),
     });
     // files.append(.{
     //     .name = "Editor.zig",
@@ -255,7 +255,7 @@ fn acceptAutocompleteSuggestion() void {
 
     autocomplete.hide();
     reparse();
-    Vapor.onEnd(updateCursorPosition);
+    Vapor.onLayout(updateCursorPosition, .{});
 }
 
 // ============================================================================
@@ -415,7 +415,7 @@ fn onKeyDown(evt: *Vapor.Event) void {
 
     // ---- NEW: Trigger autocomplete lazily on alphanumeric / underscore / @ / . ----
     if (key.len == 1 and (std.ascii.isAlphanumeric(key[0]) or key[0] == '_' or key[0] == '@' or key[0] == '.')) {
-        Vapor.onEnd(triggerAutocompleteLazy);
+        Vapor.onLayout(triggerAutocompleteLazy, .{});
     } else if (std.mem.eql(u8, key, " ") or std.mem.eql(u8, key, "Delete") or std.mem.eql(u8, key, "Escape")) {
         autocomplete.hide(); // NEW — hide on space/delete/escape
     }
@@ -472,7 +472,7 @@ fn handleEnter() void {
     }
 
     reparse();
-    Vapor.onEnd(updateCursorPosition);
+    Vapor.onLayout(updateCursorPosition, .{});
 }
 
 // ============================================================================
@@ -500,7 +500,7 @@ fn handleTab(shift: bool) void {
         setText(total);
         new_cursor_pos = cursor_pos + indent.len;
         reparse();
-        Vapor.onEnd(updateCursorPosition);
+        Vapor.onLayout(updateCursorPosition, .{});
     }
 }
 
@@ -525,7 +525,7 @@ fn handleBlockIndent(start: usize, end: usize) void {
     setText(total);
     new_cursor_pos = start + 4;
     reparse();
-    Vapor.onEnd(updateCursorPosition);
+    Vapor.onLayout(updateCursorPosition, .{});
 }
 
 fn handleBlockOutdent(start: usize, end: usize) void {
@@ -553,7 +553,7 @@ fn handleBlockOutdent(start: usize, end: usize) void {
     setText(total);
     new_cursor_pos = if (start >= 4) start - 4 else start;
     reparse();
-    Vapor.onEnd(updateCursorPosition);
+    Vapor.onLayout(updateCursorPosition, .{});
 }
 
 fn outdentCurrentLine(cursor_pos: usize) void {
@@ -571,7 +571,7 @@ fn outdentCurrentLine(cursor_pos: usize) void {
     setText(total);
     new_cursor_pos = if (cursor_pos >= skip) cursor_pos - skip else cursor_pos;
     reparse();
-    Vapor.onEnd(updateCursorPosition);
+    Vapor.onLayout(updateCursorPosition, .{});
 }
 
 // ============================================================================
@@ -605,7 +605,7 @@ fn insertAutoClosePair(open: u8, close: u8) void {
     } else {
         if (open == close and cursor_pos < content.len and content[cursor_pos] == close) {
             new_cursor_pos = cursor_pos + 1;
-            Vapor.onEnd(updateCursorPosition);
+            Vapor.onLayout(updateCursorPosition, .{});
             return;
         }
         const pair = std.fmt.allocPrint(Vapor.arena(.frame), "{c}{c}", .{ open, close }) catch unreachable;
@@ -615,14 +615,14 @@ fn insertAutoClosePair(open: u8, close: u8) void {
     }
 
     reparse();
-    Vapor.onEnd(updateCursorPosition);
+    Vapor.onLayout(updateCursorPosition, .{});
 }
 
 fn trySkipClosingChar(close: u8) bool {
     const cursor_pos = text_area.cursorPosition();
     if (cursor_pos < content.len and content[cursor_pos] == close) {
         new_cursor_pos = cursor_pos + 1;
-        Vapor.onEnd(updateCursorPosition);
+        Vapor.onLayout(updateCursorPosition, .{});
         return true;
     }
     return false;
@@ -641,7 +641,7 @@ fn tryDeletePair() bool {
             setText(total);
             new_cursor_pos = cursor_pos - 1;
             reparse();
-            Vapor.onEnd(updateCursorPosition);
+            Vapor.onLayout(updateCursorPosition, .{});
             return true;
         }
     }
@@ -686,7 +686,7 @@ fn toggleComment(_: *Vapor.Event) void {
     const total = std.fmt.allocPrint(Vapor.arena(.frame), "{s}{s}{s}", .{ content[0..bounds.start], result, content[bounds.end..] }) catch unreachable;
     setText(total);
     reparse();
-    Vapor.onEnd(updateCursorPosition);
+    Vapor.onLayout(updateCursorPosition, .{});
 }
 
 fn toggleBlockComment(sel_start: usize, sel_end: usize) void {
@@ -744,7 +744,7 @@ fn toggleBlockComment(sel_start: usize, sel_end: usize) void {
     setText(total);
     new_cursor_pos = line_start + result.items.len;
     reparse();
-    Vapor.onEnd(updateCursorPosition);
+    Vapor.onLayout(updateCursorPosition, .{});
 }
 
 // ============================================================================
@@ -761,7 +761,7 @@ fn duplicateLine() void {
     setText(total);
     new_cursor_pos = bounds.end + 1 + (cursor_pos - bounds.start);
     reparse();
-    Vapor.onEnd(updateCursorPosition);
+    Vapor.onLayout(updateCursorPosition, .{});
 }
 
 fn deleteLine() void {
@@ -773,7 +773,7 @@ fn deleteLine() void {
     setText(total);
     new_cursor_pos = bounds.start;
     reparse();
-    Vapor.onEnd(updateCursorPosition);
+    Vapor.onLayout(updateCursorPosition, .{});
 }
 
 fn moveLineUp() void {
@@ -793,7 +793,7 @@ fn moveLineUp() void {
     setText(total);
     new_cursor_pos = prev_line_start + (cursor_pos - bounds.start);
     reparse();
-    Vapor.onEnd(updateCursorPosition);
+    Vapor.onLayout(updateCursorPosition, .{});
 }
 
 fn moveLineDown() void {
@@ -814,14 +814,14 @@ fn moveLineDown() void {
     const raw_pos = next_line_start + next_line.len + 1 + (cursor_pos - bounds.start);
     new_cursor_pos = @min(raw_pos, content.len);
     reparse();
-    Vapor.onEnd(updateCursorPosition);
+    Vapor.onLayout(updateCursorPosition, .{});
 }
 
 // ============================================================================
 // Wasm / Fetch (unchanged)
 // ============================================================================
 
-const fetch = Vapor.Kit.Fetch.fetch;
+const fetch = Vapor.fetch;
 const backend = @import("backend.zig");
 
 var fetching: bool = false;
@@ -839,19 +839,19 @@ fn getWasm() void {
         .body = content,
         .body_type = .string,
         .credentials = "include",
-    }).handle(handleWasmResponse);
+    }).handle(handleWasmResponse, .{});
 }
 
-var err_response: ?Vapor.Kit.ErrResponse = null;
-fn handleWasmResponse(resp: Vapor.Kit.Response) void {
+var err_response: ?Vapor.Fetch.ErrorResponse = null;
+fn handleWasmResponse(resp: Vapor.Fetch.Result) void {
     code_editor.errors.clearRetainingCapacity();
     switch (resp) {
-        .Ok => |ok| {
+        .ok => |ok| {
             std.log.info("ok {d}", .{ok.body.len});
             const wasm_url = backend.url("/api/wasm/build");
             Vapor.Wasm.runPlaygroundWasm(wasm_url.ptr, wasm_url.len);
         },
-        .Err => |err| {
+        .err => |err| {
             err_response = err.clone(.request);
             var itr = std.mem.splitScalar(u8, err_response.?.body, ':');
             _ = itr.next() orelse return;
@@ -912,7 +912,7 @@ fn gotoTab(file: *File, i: usize) void {
     // only reload if content was set externally
     content = content_buffer.items;
     code_editor.recompile(content) catch return;
-    Vapor.onEnd(updateCursorPosition);
+    Vapor.onLayout(updateCursorPosition, .{});
 }
 
 fn addTab() void {
@@ -920,7 +920,7 @@ fn addTab() void {
         .name = "New File",
         .content = "",
         .file_name = "new_file.zig",
-        .buffer = Vapor.persist.Array(u8),
+        .buffer = Vapor.persist.array(u8),
     });
     selected_file = files.items.len - 1;
     content_buffer = &files.items[selected_file].buffer;
@@ -933,7 +933,7 @@ fn loadFileWithContent() void {
         .name = "New File",
         .content = Assembler.current_code,
         .file_name = "new_file.zig",
-        .buffer = Vapor.persist.Array(u8),
+        .buffer = Vapor.persist.array(u8),
     });
     selected_file = files.items.len - 1;
     files.items[selected_file].buffer.appendSlice(Assembler.current_code);
@@ -943,7 +943,7 @@ fn loadFileWithContent() void {
         std.log.err("playground: failed to recompile {any}", .{err});
         return;
     };
-    Vapor.onEndCtx(Vapor.cycle, .{});
+    Vapor.onLayout(Vapor.cycle, .{});
 }
 
 fn editFile(file: *File, i: usize, evt: *Vapor.Event) void {
@@ -1033,7 +1033,7 @@ fn CodeRow(code: *SyntaxHighlighter) void {
             }
             Center().width(.percent(100))
                 .height(.expand)
-                .scroll(.scroll_y())
+                .scroll(.scrollY())
                 .background(.hex("#282828"))
                 .pos(.relative)
                 .children({
@@ -1065,17 +1065,17 @@ fn CodeRow(code: *SyntaxHighlighter) void {
                         .outline(.none, null)
                         .border(.none)
                         .resize(.none)
-                        .border(.simple(.transparent))
+                        .border(.thin(.transparent))
                         .height(.percent(100))
                         .textDecoration(.none)
-                        .whitespace(.pre)
-                        .padding(.tblr(11, 0, 47, 0))
+                        .whiteSpace(.pre)
+                        .padding(.{ .top = 11, .left = 47 })
                         .fontFamily("DM Mono, monospace")
                         .caret(.{ .type = .line, .color = .hex("#00AAFF") })
                         .textDecoration(.none)
                         .fontSize(15)
                         .fontWeight(400)
-                        .fontColor(.transparent)
+                        .textColor(.transparent)
                         .onEvent(.scroll, onScroll, .{code})
                         .onChange(onChange, .{})
                         .onEvent(.keydown, onKeyDown, .{})
@@ -1112,7 +1112,7 @@ fn Output() void {
                 .width(.px(8))
                 .height(.percent(100))
                 .layout(.center)
-                .border(.simple(.palette(.border_color_light)))
+                .border(.thin(.palette(.border_color_light)))
                 .cursor(Vapor.Types.Cursor.ew_resize)
                 .children({
                 Vapor.Divider(8)
@@ -1177,7 +1177,7 @@ fn Output() void {
                 Stack()
                     .width(.percent(100))
                     .height(.fit)
-                    .inlineStyleStr("border-top: 8px solid rgba(var(--tint))")
+                    .inlineStyle("border-top: 8px solid rgba(var(--tint))", .{})
                     .radius(Vapor.Types.BorderRadius.all(8))
                     .padding(.all(8))
                     .background(.hex("#111110"))
@@ -1234,7 +1234,7 @@ fn renderNav() void {
             .background(.transparentize(.palette(.tint), 1))
             .height(.px(36))
             .padding(.xy(12, 6))
-            .border(.simple(.palette(.border_color_light)))
+            .border(.thin(.palette(.border_color_light)))
             .pointer()
             .children({
             Text("Submit ⌘ + Enter")
@@ -1249,7 +1249,7 @@ var draggable: Vapor.Draggable = .{
 };
 
 var size: f32 = 0;
-var container: Vapor.Binded = .{};
+var container: Vapor.Element = .{};
 fn onDrag(_: *Vapor.Draggable, _: *Vapor.Event) void {
     size -= draggable.movement_x;
     container.mutateAttribute(.{ .width = .{ .value = size, .unit = .px } });

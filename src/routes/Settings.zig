@@ -21,7 +21,7 @@ pub fn init() void {
     gcp_project_id = Vapor.load([]const u8, "gcp_project_id") orelse "";
     code_snippet.init();
     modal = .init(RedirectModal);
-    modal.border = .simple(.palette(.border_color_light));
+    modal.border = .thin(.palette(.border_color_light));
     tokens = Vapor.load(TokenResponse, "codex-tokens") orelse null;
 }
 
@@ -34,11 +34,11 @@ const DeviceCode = struct {
 };
 
 fn changeCodexSettings() void {
-    Vapor.Kit.Window.openTab("https://chatgpt.com/#settings/Security");
+    Vapor.openTab("https://chatgpt.com/#settings/Security");
 }
 
 fn openDeviceCodeTab() void {
-    Vapor.Kit.Window.openTab("https://auth.openai.com/codex/device");
+    Vapor.openTab("https://auth.openai.com/codex/device");
 }
 
 fn RedirectModal(_: *Modal) void {
@@ -68,7 +68,7 @@ fn RedirectModal(_: *Modal) void {
                 .background(.transparentize(.palette(.tint), 1))
                 .height(.px(36))
                 .padding(.xy(12, 6))
-                .border(.simple(.palette(.border_color_light)))
+                .border(.thin(.palette(.border_color_light)))
                 .pointer()
                 .children({
                 Text("Update Codex Settings")
@@ -92,7 +92,7 @@ fn RedirectModal(_: *Modal) void {
                 .background(.transparentize(.palette(.tint), 1))
                 .height(.px(36))
                 .padding(.xy(12, 6))
-                .border(.simple(.palette(.border_color_light)))
+                .border(.thin(.palette(.border_color_light)))
                 .pointer()
                 .children({
                 Text("Submit User Code")
@@ -103,7 +103,7 @@ fn RedirectModal(_: *Modal) void {
 
         Text("⚠️ We do not store user codes, or any other information, this is purely for authentication purposes, so you can use Codex within the browser.")
             .fontSize(16)
-            .fontColor(.palette(.text))
+            .textColor(.palette(.text))
             .fontWeight(300)
             .end();
     });
@@ -137,7 +137,7 @@ fn renderNav() void {
             .background(.transparentize(.palette(.tint), 1))
             .height(.px(36))
             .padding(.xy(12, 6))
-            .border(.simple(.palette(.border_color_light)))
+            .border(.thin(.palette(.border_color_light)))
             .pointer()
             .children({
             Text("Save")
@@ -200,7 +200,7 @@ fn blurVertex(evt: *Vapor.Event) void {
     vertex_access_token_edited = false;
 }
 
-const fetch = Vapor.Kit.Fetch.fetch;
+const fetch = Vapor.fetch;
 fn fetchDeviceCode() void {
     fetch("https://auth.openai.com/api/accounts/deviceauth/usercode", .{
         .method = .POST,
@@ -210,20 +210,20 @@ fn fetchDeviceCode() void {
         .body =
         \\{"client_id":"app_EMoamEEZ73f0CkXaXp7hrann"}
         ,
-    }).handle(handleDeviceCode);
+    }).handle(handleDeviceCode, .{});
 }
 
-fn handleDeviceCode(resp: Vapor.Kit.Response) void {
+fn handleDeviceCode(resp: Vapor.Fetch.Result) void {
     switch (resp) {
-        .Ok => |ok| {
+        .ok => |ok| {
             std.log.info("ok {d}", .{ok.body.len});
             std.log.info("Handle Device Code Response: {s}", .{ok.body});
-            const value = ok.bind(DeviceCode, Vapor.persist.arena()) catch unreachable;
+            const value = std.json.parseFromSliceLeaky(DeviceCode, Vapor.persist.arena(), ok.body, .{ .ignore_unknown_fields = true }) catch unreachable;
             device_code = value;
             Vapor.lib.timeout("polling token", 5000, pollForToken, .{});
             modal.open();
         },
-        .Err => |er| {
+        .err => |er| {
             std.log.err("err {s}", .{er.body});
             std.log.err("{s}", .{er.message});
         },
@@ -243,7 +243,7 @@ fn pollForToken() void {
             .{ .name = "Content-Type", .value = "application/json" },
         },
         .body = body,
-    }).handle(handleTokenPoll);
+    }).handle(handleTokenPoll, .{});
 }
 
 const PollResponse = struct {
@@ -255,19 +255,19 @@ const PollResponse = struct {
     code_verifier: []const u8 = "code_verifier",
 };
 
-fn handleTokenPoll(resp: Vapor.Kit.Response) void {
+fn handleTokenPoll(resp: Vapor.Fetch.Result) void {
     std.log.debug("POLLING", .{});
     switch (resp) {
-        .Ok => |ok| {
+        .ok => |ok| {
             std.log.info("ok {d}", .{ok.body.len});
             std.log.info("{s}", .{ok.body});
-            const value = ok.bind(PollResponse, Vapor.frame.arena()) catch unreachable;
+            const value = std.json.parseFromSliceLeaky(PollResponse, Vapor.frame.arena(), ok.body, .{ .ignore_unknown_fields = true }) catch unreachable;
             Vapor.lib.cancelTimeout("polling token");
             if (std.mem.eql(u8, value.status, "success")) {
                 exchangeAuthCode(value.authorization_code, value.code_verifier);
             }
         },
-        .Err => |er| {
+        .err => |er| {
             std.log.err("{s}", .{er.body});
             Vapor.lib.timeout("polling token", 5000, pollForToken, .{});
         },
@@ -285,7 +285,7 @@ fn exchangeAuthCode(authorization_code: []const u8, code_verifier: []const u8) v
             .{ .name = "Content-Type", .value = "application/json" },
         },
         .body = body,
-    }).handle(handleTokenExchange);
+    }).handle(handleTokenExchange, .{});
 }
 
 pub const TokenResponse = struct {
@@ -304,16 +304,16 @@ pub const TokenResponse = struct {
     }
 };
 
-fn handleTokenExchange(resp: Vapor.Kit.Response) void {
+fn handleTokenExchange(resp: Vapor.Fetch.Result) void {
     switch (resp) {
-        .Ok => |ok| {
+        .ok => |ok| {
             std.log.info("ok {d}", .{ok.body.len});
             std.log.info("{s}", .{ok.body});
             Vapor.store("codex-tokens", ok.body);
-            const value = ok.bind(TokenResponse, Vapor.frame.arena()) catch unreachable;
+            const value = std.json.parseFromSliceLeaky(TokenResponse, Vapor.frame.arena(), ok.body, .{ .ignore_unknown_fields = true }) catch unreachable;
             std.log.info("Token Response: {s}", .{value.access_token});
         },
-        .Err => |er| {
+        .err => |er| {
             std.log.err("{s}", .{er.message});
         },
     }
@@ -346,7 +346,7 @@ fn render() void {
                     .background(.transparentize(.palette(.tint), 1))
                     .height(.px(36))
                     .padding(.xy(12, 6))
-                    .border(.simple(.palette(.border_color_light)))
+                    .border(.thin(.palette(.border_color_light)))
                     .pointer()
                     .children({
                     Text("Connect OpenAI Codex")

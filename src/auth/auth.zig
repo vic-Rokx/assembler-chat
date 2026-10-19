@@ -13,7 +13,7 @@ pub fn getAccessToken(allocator: mem.Allocator) ![]const u8 {
     if (stored) |tokens| {
         defer tokens.deinit(allocator);
         // if (!store.isExpired(tokens)) {
-            return try allocator.dupe(u8, tokens.access_token);
+        return try allocator.dupe(u8, tokens.access_token);
         // }
 
         // 2. If expired but we have a refresh token, try refreshing
@@ -53,7 +53,7 @@ pub fn login() void {
     const cli = "https://auth.openai.com/oauth/authorize?response_type=code&client_id=app_EMoamEEZ73f0CkXaXp7hrann&redirect_uri=http://localhost:1455/auth/callback&scope=openid profile email offline_access&code_challenge=f3sYDWhiLUVJ2ikciV7IknQt4ELE9L1eLV8lIqz1j14&code_challenge_method=S256&state=THmYsGdU27e9b4hBMTtdSQ";
     std.log.debug("{s}", .{cli});
     std.log.debug("{s}", .{auth_url});
-    Vapor.Kit.setWindowLocation(auth_url);
+    Vapor.redirect(auth_url);
 
     // Try to open browser
     // openBrowser(allocator, auth_url);

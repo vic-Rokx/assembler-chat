@@ -58,7 +58,7 @@ fn renderNav() void {
             .background(.transparentize(.palette(.tint), 1))
             .height(.px(36))
             .padding(.xy(12, 6))
-            .border(.simple(.palette(.border_color_light)))
+            .border(.thin(.palette(.border_color_light)))
             .pointer()
             .children({
             Text("Save")

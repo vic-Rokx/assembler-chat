@@ -8,7 +8,7 @@ const Opaque = @import("opaque_ui");
 const Tabs = Opaque.Tabs;
 const Field = Opaque.Field;
 const Button = Opaque.Button;
-const KeyStone = Vapor.KeyStone;
+const KeyStone = @import("keystone");
 const utils = Vapor.utils;
 const Validation = @import("vaporize").Validation;
 const ValidationError = @import("vaporize").ValidationError;
@@ -27,7 +27,7 @@ login_subtitle: []const u8 = "Login to your account",
 create_account_title: []const u8 = "Create Account",
 create_account_subtitle: []const u8 = "Create an account to login",
 
-var hovered: ?*const Vapor.IconTokens = null;
+var hovered: ?Vapor.IconTokens = null;
 
 pub const Details = struct {
     name: []const u8 = "",
@@ -48,13 +48,13 @@ pub fn init() void {
 fn submit() void {
     createUser();
     if (KeyStone.isAuthenticated()) {
-        Vapor.print("Already logged in", .{});
+        Vapor.print(.info, "Already logged in", .{});
     } else {
-        Vapor.print("Logging in", .{});
+        Vapor.print(.info, "Logging in", .{});
     }
 }
 
-const fetch = Vapor.Kit.Fetch.fetch;
+const fetch = Vapor.fetch;
 fn createAccount() void {
     const payload = utils.stringify(details, .frame) catch unreachable;
     fetch(backend.url("/user"), .{
@@ -62,25 +62,25 @@ fn createAccount() void {
         .credentials = "include",
         .body = payload,
         .body_type = .json,
-    }).handle(createdAccount);
+    }).handle(createdAccount, .{});
 }
 
-fn createdAccount(resp: Vapor.Kit.Response) void {
+fn createdAccount(resp: Vapor.Fetch.Result) void {
     if (resp.isOk()) {
-        Vapor.println("Account created {s}", .{resp.Ok.body});
+        Vapor.println("Account created {s}", .{resp.ok.body});
     }
 }
 
-fn validateSession(resp: Vapor.Kit.Response) void {
+fn validateSession(resp: Vapor.Fetch.Result) void {
     if (resp.isOk()) {
-        Vapor.println("Session validated {s}", .{resp.Ok.body});
+        Vapor.println("Session validated {s}", .{resp.ok.body});
     }
 }
 
 fn Card() Vapor.Builder(.pure) {
     return Stack()
-        .background(.transparentizeHex(.palette(.background), 0.5))
-        .border(.simple(.palette(.border_color_light)))
+        .background(.transparentize(.palette(.background), 0.5))
+        .border(.thin(.palette(.border_color_light)))
         // .border(.round(.palette(.border_color_light), .all(12)))
         .width(.percent(30))
         .padding(.all(16))
@@ -88,7 +88,7 @@ fn Card() Vapor.Builder(.pure) {
         .spacing(16);
 }
 
-fn onHover(icon: *const Vapor.IconTokens, _: *Vapor.Event) void {
+fn onHover(icon: Vapor.IconTokens, _: *Vapor.Event) void {
     hovered = icon;
 }
 
@@ -100,14 +100,14 @@ fn loginWithProvider(provider: KeyStone.Provider) void {
     KeyStone.signInWithOauth(provider);
 }
 
-fn AuthBtn(args: KeyStone.Provider, icon: *const Vapor.IconTokens) void {
+fn AuthBtn(args: KeyStone.Provider, icon: Vapor.IconTokens) void {
     Button(loginWithProvider, .{args})
-        .size(.hw_px(36, 36))
+        .size(.hwPx(36, 36))
         .layout(.center)
-        .background(.transparentizeHex(.black, 0.8))
+        .background(.transparentize(.black, 0.8))
         .border(.round(.black, .all(8)))
         .pointer()
-        .fontColor(.white)
+        .textColor(.white)
         .hover(.{
             .background = .yellow,
             .text_color = .black,
@@ -122,20 +122,20 @@ fn AuthBtn(args: KeyStone.Provider, icon: *const Vapor.IconTokens) void {
 }
 
 fn payment() void {
-    Vapor.Kit.fetch(backend.url("/checkout"), handlePayment, .{
+    Vapor.fetch(backend.url("/checkout"), .{
         .method = .POST,
         .credentials = "include",
         .headers = .{
             .content_type = "application/x-www-form-urlencoded",
         },
-    });
+    }).handle(handlePayment, .{});
 }
 
-fn handlePayment(resp: Vapor.Kit.Response) void {
+fn handlePayment(resp: Vapor.Fetch.Result) void {
     switch (resp) {
         .ok => |data| {
             Vapor.println("Payment data {any}", .{data.body});
-            Vapor.Kit.setWindowLocation(data.body);
+            Vapor.redirect(data.body);
         },
         .err => |err| {
             Vapor.println("Failed to fetch payment data: {s}", .{err.message});
@@ -146,7 +146,7 @@ fn handlePayment(resp: Vapor.Kit.Response) void {
 
 fn onChange(evt: *Vapor.Event) void {
     evt.preventDefault();
-    Vapor.print("onChange {s}", .{evt.text()});
+    Vapor.print(.info, "onChange {s}", .{evt.text()});
 }
 
 pub const Auth = struct {
@@ -166,12 +166,12 @@ fn createUser() void {
         .credentials = "include",
         .body = utils.stringify(user, .frame) catch unreachable,
         .body_type = .json,
-    }).handle(handleCreatedUser);
+    }).handle(handleCreatedUser, .{});
 }
 
-fn handleCreatedUser(resp: Vapor.Kit.Response) void {
+fn handleCreatedUser(resp: Vapor.Fetch.Result) void {
     if (resp.isOk()) {
-        Vapor.println("User created {s}", .{resp.Ok.body});
+        Vapor.println("User created {s}", .{resp.ok.body});
     }
 }
 
@@ -213,7 +213,7 @@ pub fn render() void {
                             .layout(.left_center)
                             .children({
                             for (KeyStone.configuredProviders()) |provider| {
-                                const icon: Vapor.IconType = switch (provider) {
+                                const icon: Vapor.IconTokens = switch (provider) {
                                     .google => .google,
                                     .github => .github,
                                     .apple => .apple,
@@ -240,7 +240,7 @@ pub fn render() void {
                         .children({
                         Button(submit, .{})
                             .animation("glitch")
-                            .background(.transparentizeHex(.black, 0.8))
+                            .background(.transparentize(.black, 0.8))
                             .border(.round(.black, .all(8)))
                             .padding(.all(6))
                             .pointer()
@@ -283,7 +283,7 @@ pub fn render() void {
                         .children({
                         Button(createAccount, .{})
                             .animation("glitch")
-                            .background(.transparentizeHex(.black, 0.8))
+                            .background(.transparentize(.black, 0.8))
                             .border(.round(.black, .all(8)))
                             .padding(.all(6))
                             .pointer()

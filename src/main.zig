@@ -15,7 +15,7 @@ const Planner = @import("routes/Planner.zig");
 const Settings = @import("routes/Settings.zig");
 const Callback = @import("routes/auth/callback/Page.zig");
 const Login = @import("routes/auth/login/Page.zig");
-const KeyStone = Vapor.KeyStone;
+const KeyStone = @import("keystone");
 const backend = @import("routes/backend.zig");
 
 // Initialize Vapor
@@ -44,7 +44,6 @@ fn layout(page: Vapor.PageFn) void {
 pub export fn init() void {
     Vapor.init(.{});
     vaporize = Vaporize.init(Vapor.arena(.persist), .{}) catch unreachable; // this causes issues
-    Vapor.Kit.init();
 
     Login.init();
     Callback.init();
@@ -192,7 +191,7 @@ pub fn buildLogoDrawAnimations() void {
         .{ .name = "ld49", .length = 114, .delay_ms = 1850 },
     };
 
-    var anims = Vapor.persist.Array(Animation);
+    var anims = Vapor.persist.array(Animation);
     for (lines) |line| {
         const anim = Animation.init(line.name)
             .at(0).set(.strokeDashoffset, line.length)

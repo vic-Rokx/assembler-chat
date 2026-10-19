@@ -72,6 +72,7 @@ fn generateHtml(
             .{ .name = "vaporize", .module = vaporize_module },
             .{ .name = "opaque_ui", .module = opaque_ui_module },
             .{ .name = "build_options", .module = build_options_module },
+            .{ .name = "keystone", .module = vapor_dep.module("keystone") },
         },
     });
 
@@ -157,18 +158,21 @@ pub fn build(b: *std.Build) void {
     // ---------------------
     //  Executable
     // ---------------------
+    const app_imports: []const std.Build.Module.Import = &.{
+        .{ .name = "vapor", .module = vapor_module },
+        .{ .name = "theme", .module = theme_module },
+        .{ .name = "config", .module = config_module },
+        .{ .name = "vaporize", .module = vaporize_module },
+        .{ .name = "opaque_ui", .module = opaque_ui_module },
+        .{ .name = "build_options", .module = build_options_module },
+        .{ .name = "keystone", .module = vapor_dep.module("keystone") },
+    };
+
     const exe_mod = b.createModule(.{
         .root_source_file = b.path("src/main.zig"),
         .target = wasm_target,
         .optimize = optimize,
-        .imports = &.{
-            .{ .name = "vapor", .module = vapor_module },
-            .{ .name = "theme", .module = theme_module },
-            .{ .name = "config", .module = config_module },
-            .{ .name = "vaporize", .module = vaporize_module },
-            .{ .name = "opaque_ui", .module = opaque_ui_module },
-            .{ .name = "build_options", .module = build_options_module },
-        },
+        .imports = app_imports,
     });
 
     const exe = b.addExecutable(.{
@@ -192,6 +196,25 @@ pub fn build(b: *std.Build) void {
     exe.rdynamic = true;
 
     b.installArtifact(exe);
+
+    // vapor's JS runtime, served beside the wasm.
+    b.getInstallStep().dependOn(&b.addInstallBinFile(vapor_dep.namedLazyPath("runtime"), "bundle.min.js").step);
+    b.getInstallStep().dependOn(&b.addInstallBinFile(vapor_dep.namedLazyPath("runtime-browser"), "browser.min.js").step);
+
+    // ---------------------
+    //  Check: compiles every route, used or not (src/check.zig)
+    // ---------------------
+    const check_obj = b.addObject(.{
+        .name = "assembler-check",
+        .root_module = b.createModule(.{
+            .root_source_file = b.path("src/check.zig"),
+            .target = wasm_target,
+            .optimize = optimize,
+            .imports = app_imports,
+        }),
+    });
+    const check_step = b.step("check", "Type-check every route, including ones no page uses yet");
+    check_step.dependOn(&check_obj.step);
 
     // ---------------------
     //  Run step

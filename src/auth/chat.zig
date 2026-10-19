@@ -174,33 +174,33 @@ pub fn callCodex(allocator: mem.Allocator, messages: []const ChatMessage, model_
     const auth_header = try std.fmt.allocPrint(allocator, "Bearer {s}", .{access_token});
     defer allocator.free(auth_header);
 
-    var fc = Vapor.Kit.Fetch.fetch(codex_api_url, .{
+    var fc = Vapor.fetch(codex_api_url, .{
         .method = .POST,
         .body = payload,
         .extra_headers = &.{
-            Vapor.Kit.HttpHeader{
+            Vapor.Fetch.Header{
                 .name = "Content-Type",
                 .value = "application/json",
             },
-            Vapor.Kit.HttpHeader{
+            Vapor.Fetch.Header{
                 .name = "Authorization",
                 .value = auth_header,
             },
         },
     });
-    fc.handle(handleCodexResponse);
+    fc.handle(handleCodexResponse, .{});
 }
 
-fn handleCodexResponse(resp: Vapor.Kit.Response) void {
+fn handleCodexResponse(resp: Vapor.Fetch.Result) void {
     switch (resp) {
-        .Ok => |ok| {
+        .ok => |ok| {
             const text = parseSSEPayload(Vapor.frame.arena(), ok.body) catch |err| {
                 std.log.err("Error: {any}", .{err});
                 return;
             };
             Assembler.applyAssistantContent(text);
         },
-        .Err => |er| {
+        .err => |er| {
             std.log.err("err {s}", .{er.body});
         },
     }

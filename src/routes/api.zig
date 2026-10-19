@@ -121,46 +121,44 @@ pub fn unescapeJson(raw: []const u8) []const u8 {
 // FETCH HELPERS
 // =============================================================================
 
-const fetch = Vapor.Kit.Fetch.fetch;
+const fetch = Vapor.fetch;
 
 /// Submit prompt to the local backend
 pub fn submitToBackend(
     prompt: []const u8,
-    handler: fn (Vapor.Kit.Response) void,
+    handler: fn (Vapor.Fetch.Result) void,
 ) void {
-    const payload = Vapor.fmtln(
-        \\{{"query":"{s}"}}
-    , .{prompt});
+    // Escaped: a prompt with quotes or newlines is still valid JSON.
+    const payload = std.json.Stringify.valueAlloc(Vapor.arena(.frame), .{ .query = prompt }, .{}) catch return;
 
     fetch(backend.url("/chat"), .{
         .method = .POST,
         .body = payload,
         .credentials = "include",
         .body_type = .json,
-    }).handle(handler);
+    }).handle(handler, .{});
 }
 
 /// Submit prompt to the local backend
 pub fn submitToBackendVertex(
     prompt: []const u8,
-    handler: fn (Vapor.Kit.Response) void,
+    handler: fn (Vapor.Fetch.Result) void,
 ) void {
-    const payload = Vapor.fmtln(
-        \\{{"query":"{s}"}}
-    , .{prompt});
+    // Escaped: a prompt with quotes or newlines is still valid JSON.
+    const payload = std.json.Stringify.valueAlloc(Vapor.arena(.frame), .{ .query = prompt }, .{}) catch return;
 
     fetch(backend.url("/api/vertex"), .{
         .method = .POST,
         .body = payload,
         .credentials = "include",
         .body_type = .json,
-    }).handle(handler);
+    }).handle(handler, .{});
 }
 
 /// Submit prompt directly to the Claude API via browser
 pub fn submitToClaude(
     messages: []const ClaudeChatMessage,
-    handler: fn (Vapor.Kit.Response) void,
+    handler: fn (Vapor.Fetch.Result) void,
     model: []const u8,
 ) !void {
     const key = Vapor.load([]const u8, "claude_api_token") orelse {
@@ -187,11 +185,11 @@ pub fn submitToClaude(
         .body = json,
         .body_type = .json,
         .extra_headers = &.{
-            Vapor.Kit.HttpHeader{ .name = "x-api-key", .value = key },
-            Vapor.Kit.HttpHeader{ .name = "anthropic-version", .value = "2023-06-01" },
-            Vapor.Kit.HttpHeader{ .name = "anthropic-dangerous-direct-browser-access", .value = "true" },
+            Vapor.Fetch.Header{ .name = "x-api-key", .value = key },
+            Vapor.Fetch.Header{ .name = "anthropic-version", .value = "2023-06-01" },
+            Vapor.Fetch.Header{ .name = "anthropic-dangerous-direct-browser-access", .value = "true" },
         },
-    }).handle(handler);
+    }).handle(handler, .{});
 }
 
 /// Submit prompt directly to the OpenAI API via browser
@@ -211,7 +209,7 @@ pub fn submitToCodex(
 /// Submit prompt to Claude via Google Cloud Vertex AI
 pub fn submitToClaudeVertex(
     messages: []const ClaudeChatMessage,
-    handler: fn (Vapor.Kit.Response) void,
+    handler: fn (Vapor.Fetch.Result) void,
     model: []const u8,
 ) void {
     const project_id = Vapor.load([]const u8, "gcp_project_id") orelse {
@@ -256,11 +254,11 @@ pub fn submitToClaudeVertex(
         .body_type = .json,
         .credentials = "include",
         .extra_headers = &.{
-            Vapor.Kit.HttpHeader{ .name = "Authorization", .value = std.fmt.allocPrint(
+            Vapor.Fetch.Header{ .name = "Authorization", .value = std.fmt.allocPrint(
                 Vapor.frame.arena(),
                 "Bearer {s}",
                 .{access_token},
             ) catch unreachable },
         },
-    }).handle(handler);
+    }).handle(handler, .{});
 }

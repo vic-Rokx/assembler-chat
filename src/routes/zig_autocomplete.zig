@@ -47,7 +47,7 @@ pub const SuggestionKind = enum {
     enum_value,
     module,
 
-    pub fn icon(self: SuggestionKind) *const IconTokens {
+    pub fn icon(self: SuggestionKind) IconTokens {
         return switch (self) {
             .keyword => .body_text,
             .builtin => .at_sign,
@@ -191,9 +191,9 @@ pub const ZigAutoComplete = struct {
         // Re-analyze if dirty or if source length changed significantly
         if (self.analysis_dirty or
             (if (source.len > self.last_analyzed_len)
-            source.len - self.last_analyzed_len
-        else
-            self.last_analyzed_len - source.len) > 0)
+                source.len - self.last_analyzed_len
+            else
+                self.last_analyzed_len - source.len) > 0)
         {
             self.reanalyze(source);
         }
@@ -939,7 +939,7 @@ pub const ZigAutoComplete = struct {
             .border(.{ .thickness = .all(1), .color = .hex("#3d3d3d"), .style = .solid })
             .radius(.all(6))
             .padding(.all(pad))
-            .scroll(.scroll_y())
+            .scroll(.scrollY())
             .zIndex(1000)
             .children({
             for (self.filtered.items, 0..) |suggestion, idx| {
@@ -954,14 +954,14 @@ pub const ZigAutoComplete = struct {
                     .radius(.all(4))
                     .pointer()
                     .hover(.{
-                    .background = if (is_selected) .hex("#094771") else .hex("#2a2a2a"),
-                }).children({
+                        .background = if (is_selected) .hex("#094771") else .hex("#2a2a2a"),
+                    }).children({
                     // Kind badge
                     Box()
-                        .size(.square_px(20))
+                        .size(.squarePx(20))
                         .layout(.center)
                         .radius(.all(3))
-                        .margin(.r(8))
+                        .margin(.{ .right = 8 })
                         .children({
                         Icon(suggestion.kind.icon())
                             .font(12, 600, suggestion.kind.color())
@@ -982,14 +982,14 @@ pub const ZigAutoComplete = struct {
                     // Kind label
                     Text(suggestion.kind.label())
                         .font(10, 400, .hex("#666666"))
-                        .margin(.l(8))
+                        .margin(.{ .left = 8 })
                         .end();
 
                     // Detail (type info)
                     if (suggestion.detail) |detail| {
                         Text(detail)
                             .font(10, 400, .hex("#555555"))
-                            .margin(.l(4))
+                            .margin(.{ .left = 4 })
                             .end();
                     }
                 });

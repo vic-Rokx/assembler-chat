@@ -38,7 +38,7 @@ fn Counter() void {
             .inlineStyle("-webkit-text-stroke: 12px black;", .{})
             .shadow(.{ .top = 12, .left = 12, .color = .rgba(255, 0, 255, 0.7) })
             .duration(100)
-            .transform(if (is_hovered) .distAndScale(.up, 32, 1.1) else null)
+            .transform(if (is_hovered) .directionScale(.up, 32, 1.1) else null)
             .font(120, 300, font_color),
 
         Center().spacing(32).width(.percent(100)).children({
