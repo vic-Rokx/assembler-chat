@@ -1,0 +1,222 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <title>Assembler</title>
+  <meta charset="utf-8" />
+  <meta name="google-site-verification" content="12aR_338F0VaglKbfvPLczdZV_Ej6AVx9Ef7M4ULfLU" />
+  <meta name="description" content="Senet Application" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="icon" href="/assets/icon.svg" type="image/svg+xml" />
+  <link rel="preload" href="/zig-out/bin/vapor.wasm" as="fetch" type="application/wasm" crossorigin />
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin />
+
+  <link href="https://fonts.googleapis.com/css2?family=Bruno+Ace&display=swap" rel="stylesheet" media="print"
+    onload="this.media = 'all'" />
+
+  <link
+    href="https://fonts.googleapis.com/css2?family=Barlow:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&display=swap"
+    rel="stylesheet" />
+
+  <script type="module" src="/web/bundle.min.js"></script>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.min.css" />
+
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: "Barlow", sans-serif;
+      font-optical-sizing: auto;
+      height: 100dvh;
+      width: 100%;
+      box-sizing: border-box;
+      flex-shrink: 0;
+      background-color: rgba(var(--background));
+      color: rgb(var(--text_color));
+      transition:
+        background-color 0.3s ease,
+        color 0.3s ease;
+      scrollbar-width: none;
+      /* Firefox */
+      -ms-overflow-style: none;
+      /* IE/Edge */
+    }
+
+    *,
+    *::before,
+    *::after {
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+      -webkit-scrollbar: display: none;
+      scrollbar-width: none;
+      -ms-overflow-style: none;
+      /* Chrome, Safari, Opera */
+      margin: 0;
+    }
+
+    ::view-transition-group(*) {
+      animation-duration: 150ms;
+    }
+
+    ::view-transition-old(*),
+    ::view-transition-new(*) {
+      /* animation: none; */
+    }
+
+    p,
+    h1,
+    h2,
+    h3,
+    h4,
+    h5,
+    h6,
+    textarea,
+    input {
+      line-height: 1.5;
+      font-size-adjust: 0.5;
+      font-family: inherit;
+    }
+
+    table {
+      border-collapse: separate;
+      border-spacing: 0;
+    }
+
+    button p {
+      font-family: inherit;
+    }
+
+    button {
+      font-family: inherit;
+      font-size: inherit;
+      line-height: inherit;
+      color: inherit;
+      min-width: 0;
+      box-sizing: border-box;
+      display: flex;
+      /* add these: */
+      padding: 0;
+      border: none;
+      background: none;
+      text-align: inherit;
+      appearance: none;
+    }
+
+
+
+    input[type="file"]::file-selector-button {
+      background: transparent;
+      color: transparent;
+      border: none;
+    }
+
+
+    input:-webkit-autofill {
+      -webkit-box-shadow: 0 0 0 1000px transparent inset;
+      -webkit-text-fill-color: inherit;
+      caret-color: inherit;
+      transition: background-color 5000s ease-in-out 0s;
+    }
+
+    .reload-indicator {
+      position: fixed;
+      top: 16px;
+      right: 16px;
+      background: #1a1a1a;
+      color: #fff;
+      padding: 10px 16px;
+      border-radius: 6px;
+      display: none;
+      align-items: center;
+      gap: 10px;
+      font-family: system-ui, sans-serif;
+      font-size: 14px;
+      z-index: 99999;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    }
+
+    .reload-indicator.visible {
+      display: flex;
+    }
+
+    .reload-spinner {
+      width: 14px;
+      height: 14px;
+      border: 2px solid #333;
+      border-top-color: #fff;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+
+    @keyframes spin {
+      to {
+        transform: rotate(360deg);
+      }
+    }
+  </style>
+  <link rel="stylesheet" href="/static/auth/login/style.css" />
+<link rel="stylesheet" href="/static/style_variables.css" /></head>
+
+<body>
+  <div id="reload-indicator" class="reload-indicator">
+    <div class="reload-spinner"></div>
+    <span>Reloading... <span id="reload-timer">0.0</span>s</span>
+  </div>
+  <main id="contents" style="display: contents"><div  id="Flex_S7ezG2-gk" class="lay_O0voN4 pos_e8wtf3 mapa_CrkEb2 vis_SWFkJ2 ">
+<div  id="Flex_nuQjl1-gk" class="lay_HkP9f pos_e8wtf3 mapa_CrkEb2 vis_SWFkJ2 ">
+<div  id="Flex_KEh2u1-gk" class="lay_ERyub4 pos_e8wtf3 mapa_Ooany3 vis_ofu4A1 "aria-label="Main navigation tabs">
+<button  id="CtxB_8MCzy-gk" class="lay_Jayt61 pos_e8wtf3 mapa_4hFg71 vis_Wovpa4 intr_Pfp9n2 ">
+<p  id="Text_kQgOj2-gk" class="lay_jXzf62 pos_e8wtf3 mapa_CrkEb2 vis_Z3BrH1 ">Login</p>
+</button>
+<button  id="CtxB_5UCne1-gk" class="lay_Jayt61 pos_e8wtf3 mapa_4hFg71 vis_Jzad2 intr_zgZDF2 ">
+<p  id="Text_xuC7A2-gk" class="lay_jXzf62 pos_e8wtf3 mapa_CrkEb2 vis_ckDBw1 ">Create Account</p>
+</button>
+</div>
+</div>
+<div  id="Flex_TRHbF-gk" class="lay_zCOZD4 pos_e8wtf3 mapa_WM2Wg4 vis_ZUOVP ">
+<div  id="Flex_XU2EV1-gk" class="lay_bpp05 pos_e8wtf3 mapa_CrkEb2 vis_SWFkJ2 ">
+<p  id="Text_iJXn01-gk" class="lay_1I8dE4 pos_e8wtf3 mapa_CrkEb2 vis_tuxjL4 ">Login into Assembler</p>
+<p  id="Text_vI9J81-gk" class="lay_1I8dE4 pos_e8wtf3 mapa_CrkEb2 vis_YVXLO3 ">Login into your Assembler account.</p>
+</div>
+<div  id="Flex_BciiX4-gk" class="lay_R2kCO1 pos_e8wtf3 mapa_CrkEb2 vis_SWFkJ2 ">
+<button  id="CtxB_PAf1h-gk" class="lay_3uu3x2 pos_e8wtf3 mapa_hW4aM4 vis_wyaSP3 intr_DMpGD1 ">
+<i  id="Icon_sVFGa3-gk" class="bi bi-google lay_jXzf62 pos_e8wtf3 mapa_CrkEb2 vis_N8Tfk ">
+</i>
+</button>
+</div>
+<div  id="Flex_BEtUM2-gk" class="lay_qcIWs2 pos_e8wtf3 mapa_CrkEb2 vis_SWFkJ2 ">
+<div  id="Flex_eUyLd3-gk" class="lay_CIaFC pos_t0s233 mapa_CrkEb2 vis_qtSWz2 ">
+<label for="string_Flex_eUyLd3-gk"  id="Labe_jYdCI2-gk" style="transform: translateY(-50%) scale(1); z-index: 0; text-align: center;" class="lay_1I8dE4 pos_7GSMa1 mapa_sgnwh vis_32r2o1 ">Name</label>
+
+<input  id="string_Flex_eUyLd3-gk" class="lay_kSFpR4 pos_h7ld4 mapa_TK4ER4 vis_wH0KW3 "name=""/>
+
+</div>
+<div  id="Flex_R1PrR2-gk" class="lay_CIaFC pos_t0s233 mapa_CrkEb2 vis_qtSWz2 ">
+<label for="email_Flex_R1PrR2-gk"  id="Labe_9WUiB-gk" style="transform: translateY(-50%) scale(1); z-index: 0; text-align: center;" class="lay_1I8dE4 pos_7GSMa1 mapa_sgnwh vis_32r2o1 ">Email</label>
+
+<input  id="email_Flex_R1PrR2-gk" class="lay_kSFpR4 pos_h7ld4 mapa_TK4ER4 vis_wH0KW3 "name=""type="email"placeholder=""/>
+
+</div>
+<div  id="Flex_6xWWp3-gk" class="lay_CIaFC pos_t0s233 mapa_CrkEb2 vis_qtSWz2 ">
+<label for="password_Flex_6xWWp3-gk"  id="Labe_m3GuK2-gk" style="transform: translateY(-50%) scale(0.9); z-index: 0; text-align: center;" class="lay_1I8dE4 pos_RoAtR4 mapa_sgnwh vis_32r2o1 ">Password</label>
+
+<input  id="password_Flex_6xWWp3-gk" class="lay_kSFpR4 pos_h7ld4 mapa_TK4ER4 vis_wH0KW3 "name=""/>
+
+</div>
+</div>
+<div  id="Flex_F54RK2-gk" class="lay_pU0mT pos_e8wtf3 mapa_CrkEb2 vis_SWFkJ2 ">
+<button  id="CtxB_LxFNR1-gk" class="lay_Jayt61 pos_e8wtf3 mapa_kbVzx3 vis_ippNH intr_w4q9G ">
+<p  id="Text_tV0wR2-gk" class="lay_jXzf62 pos_e8wtf3 mapa_CrkEb2 vis_ku6eg2 ">Login</p>
+<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-key-icon lucide-key"   id="Svg_rhvWn2-gk" class="lay_jXzf62 pos_e8wtf3 mapa_CrkEb2 vis_1mQRV1 ">
+<path d="m15.5 7.5 2.3 2.3a1 1 0 0 0 1.4 0l2.1-2.1a1 1 0 0 0 0-1.4L19 4"/><path d="m21 2-9.6 9.6"/><circle cx="7.5" cy="15.5" r="5.5"/>
+</svg>
+</button>
+</div>
+</div>
+</div>
+</div>
+</body>
+</html>

@@ -1,0 +1,24 @@
+.{
+    .name = .vapor,
+    .version = "1.2.7",
+    .fingerprint = 0x3bb57d3cbbb608a8, // Changing this has security and trust implications.
+    .minimum_zig_version = "0.16.0",
+    .dependencies = .{
+        .vapor = .{
+            // .url = "https://github.com/senet-toolbox/vapor/archive/refs/tags/v1.2.7.tar.gz",
+            // .hash = "vapor-1.2.7-VGoNdauEHQD7EIzKz_3FhbPZar0WOAs8KN0cZMW541WP",
+            .path = "../vapor",
+        },
+        .vaporize = .{
+            .path = "../vaporize",
+        },
+        .opaque_ui = .{
+            .path = "../opaque-ui",
+        },
+    },
+    .paths = .{
+        "build.zig",
+        "build.zig.zon",
+        "src",
+    },
+}

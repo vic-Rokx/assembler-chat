@@ -1,0 +1,20 @@
+// Global registry of all created DOM nodes
+export const domNodeRegistry = new Map(); // Maps: vNodeId -> domNode
+export const eventHandlers = new Map(); // Maps: vNodeId -> domNode
+export const elementDimensions = new Map(); // Maps: vNodeId -> domNode
+export const moduleCache = new Map(); // Maps: path -> wasi_exports
+export const charts = new Map(); // Maps: path -> wasi_exports
+export const moduleRoutes = new Set(); // Maps: path -> wasi_exports
+export const afterHooksHandlers = new Map();
+export const beforeHooksHandlers = new Map();
+export let eventStorage = {};
+export let observeredSections = new Map();
+export let loadedSections = new Set();
+export let pureNodeRegistry = new Map();
+export let hooksMounted = new Map();
+export let hooksCtxCreated = new Map();
+export let observers = new Map();
+export let timeouts = new Map();
+export let hooksMountedCtx = new Map();
+export let hooksDestroyCtx = new Map();
+export let sockets = new Map();

@@ -1,0 +1,20 @@
+# robots.txt for Documentation Site
+# This file tells search engines how to crawl your site
+
+# Allow all web crawlers to access all content
+User-agent: *
+Allow: /
+
+# Specify the location of your sitemap
+# Sitemap: https://tetherlabs.app/sitemap.xml
+
+# Optional: Set crawl delay to be respectful to your server
+# Crawl-delay: 1
+
+# Common directories you might want to block (uncomment if needed):
+# Disallow: /.git/
+
+# Block specific file types if needed (uncomment if needed):
+# Disallow: /*.json$
+# Disallow: /*.xml$ 
+# Disallow: /*.log$
