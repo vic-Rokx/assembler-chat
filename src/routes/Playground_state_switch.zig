@@ -951,11 +951,6 @@ const BuildState = enum {
 var build_state: BuildState = .empty;
 var err_response: ?Vapor.Fetch.ErrorResponse = null;
 
-fn call() void {
-    build_state = .loading;
-    Vapor.timeout("wait", 5000, getWasm, .{});
-}
-
 fn getWasm() void {
     build_state = .loading;
     err_response = null;
@@ -978,7 +973,8 @@ fn handleWasmResponse(resp: Vapor.Fetch.Result) void {
             err_response = null;
             addPlaygroundRunHistory("result", "");
             if (Vapor.lib.isWasi) {
-                const wasm_url = backend.url("/api/wasm/build");
+                // The body is the build's id; its wasm is served under it.
+                const wasm_url = backend.url(Vapor.frame.fmt("/api/wasm/build/{s}.wasm", .{ok.body}));
                 Vapor.Wasm.runPlaygroundWasm(wasm_url.ptr, wasm_url.len);
             }
         },
