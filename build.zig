@@ -207,6 +207,30 @@ pub fn build(b: *std.Build) void {
     b.getInstallStep().dependOn(&b.addInstallBinFile(vapor_dep.namedLazyPath("runtime-browser"), "browser.min.js").step);
 
     // ---------------------
+    //  Site: zig-out/site/, what a static host serves
+    // ---------------------
+    // The app: index.html for every route (404.html too, for hosts that
+    // fall back to it), the runtime and the wasm where they are loaded
+    // from. playground.html is for the frame's origin (`playground_url`),
+    // which can serve this same folder.
+    const site_step = b.step("site", "Assemble zig-out/site/ for a static host (the app, and playground.html for the frame's origin)");
+    const site_dir: std.Build.InstallDir = .{ .custom = "site" };
+    for ([_][]const u8{ "index.html", "404.html" }) |name| {
+        site_step.dependOn(&b.addInstallFileWithDir(b.path("template.html"), site_dir, name).step);
+    }
+    site_step.dependOn(&b.addInstallFileWithDir(vapor_dep.namedLazyPath("runtime"), site_dir, "bundle.min.js").step);
+    site_step.dependOn(&b.addInstallFileWithDir(vapor_dep.namedLazyPath("runtime-browser"), site_dir, "browser.min.js").step);
+    site_step.dependOn(&b.addInstallFileWithDir(exe.getEmittedBin(), site_dir, "zig-out/bin/vapor.wasm").step);
+    site_step.dependOn(&b.addInstallFileWithDir(b.path("playground.html"), site_dir, "playground.html").step);
+    site_step.dependOn(&b.addInstallFileWithDir(b.path("robots.txt"), site_dir, "robots.txt").step);
+    site_step.dependOn(&b.addInstallDirectory(.{
+        .source_dir = b.path("assets"),
+        .install_dir = site_dir,
+        .install_subdir = "assets",
+        .exclude_extensions = &.{".DS_Store"},
+    }).step);
+
+    // ---------------------
     //  Check: compiles every route, used or not (src/check.zig)
     // ---------------------
     const check_obj = b.addObject(.{
