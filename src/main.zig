@@ -51,7 +51,7 @@ pub export fn init() void {
     Vapor.Animation.new();
     KeyStone.init(.{
         .clients = .{
-            .google = .{ .client_id = "403015953227-ed9i03idht6bvapcp8esnf0bgen24nl6.apps.googleusercontent.com" },
+            .google = .{ .client_id = "403015953227-2itdbfmjf4b1ma205hmldjcl2u67sija.apps.googleusercontent.com" },
         },
         .hook_path = "/auth/callback",
         .backend_url = backend.baseUrl(),
