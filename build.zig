@@ -217,6 +217,19 @@ pub fn build(b: *std.Build) void {
     check_step.dependOn(&check_obj.step);
 
     // ---------------------
+    //  Unit tests: logic that needs no browser, run on the host
+    // ---------------------
+    const unit_tests = b.addTest(.{
+        .root_module = b.createModule(.{
+            .root_source_file = b.path("src/routes/diagnostics.zig"),
+            .target = b.graph.host,
+            .optimize = optimize,
+        }),
+    });
+    const test_step = b.step("test", "Run the unit tests");
+    test_step.dependOn(&b.addRunArtifact(unit_tests).step);
+
+    // ---------------------
     //  Run step
     // ---------------------
     const run_cmd = b.addRunArtifact(exe);

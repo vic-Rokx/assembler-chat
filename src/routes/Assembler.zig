@@ -776,7 +776,9 @@ fn handleGenerateResponse(resp: Vapor.Fetch.Result) void {
     is_generating = false;
     switch (resp) {
         .ok => |ok| {
-            current_code = api.unescapeJson(ok.body);
+            // The backend sends the model's text as is; unescaping it would
+            // turn a "\n" inside a Zig string literal into a newline.
+            current_code = Vapor.dupe(ok.body, .persist);
             has_generated = true;
             code_highlighter.recompile(current_code) catch {};
             show_markdown = false;

@@ -75,48 +75,6 @@ pub fn parseResp(comptime T: type, body: []const u8, allocator: std.mem.Allocato
     return parsed.value;
 }
 
-pub fn unescapeJson(raw: []const u8) []const u8 {
-    const alloc = Vapor.arena(.persist);
-    var out = alloc.alloc(u8, raw.len) catch return raw;
-    var i: usize = 0;
-    var j: usize = 0;
-    while (i < raw.len) {
-        if (raw[i] == '\\' and i + 1 < raw.len) {
-            switch (raw[i + 1]) {
-                'n' => {
-                    out[j] = '\n';
-                    i += 2;
-                },
-                't' => {
-                    out[j] = '\t';
-                    i += 2;
-                },
-                '"' => {
-                    out[j] = '"';
-                    i += 2;
-                },
-                '\\' => {
-                    out[j] = '\\';
-                    i += 2;
-                },
-                'r' => {
-                    out[j] = '\r';
-                    i += 2;
-                },
-                else => {
-                    out[j] = raw[i];
-                    i += 1;
-                },
-            }
-        } else {
-            out[j] = raw[i];
-            i += 1;
-        }
-        j += 1;
-    }
-    return out[0..j];
-}
-
 // =============================================================================
 // FETCH HELPERS
 // =============================================================================

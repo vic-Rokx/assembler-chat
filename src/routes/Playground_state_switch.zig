@@ -941,6 +941,7 @@ fn moveLineDown() void {
 
 const fetch = Vapor.fetch;
 const backend = @import("backend.zig");
+const diagnostics = @import("diagnostics.zig");
 
 const BuildState = enum {
     empty,
@@ -965,9 +966,11 @@ fn getWasm() void {
 }
 
 fn handleWasmResponse(resp: Vapor.Fetch.Result) void {
-    code_editor.errors.clearRetainingCapacity();
+    code_editor.clearExternalErrors();
     switch (resp) {
         .ok => |ok| {
+            // Drop the last build's marks.
+            reparse();
             std.log.info("ok {d}", .{ok.body.len});
             build_state = .result;
             err_response = null;
@@ -989,23 +992,14 @@ fn handleWasmResponse(resp: Vapor.Fetch.Result) void {
                 .kind = err.kind,
             };
             addPlaygroundRunHistory("error", err.body);
-            var itr = std.mem.splitScalar(u8, err_response.?.body, ':');
-            _ = itr.next() orelse return;
-            const line = itr.next() orelse return;
-            const l = std.fmt.parseInt(u8, line, 10) catch 0;
-            const column = itr.next() orelse return;
-            const col = std.fmt.parseInt(u8, column, 10) catch 0;
-            std.log.info("err {d} {s}", .{ col, line });
-            const c = findClosestTokenColumn(l, col);
-            code_editor.addError(.{
-                .line = 13,
-                .column = c,
-                .type = .keyword,
-                .text = "Counter",
-                .color = .{ .palette = .code_keyword_color },
-            }, "This is a test err") catch unreachable;
-
-            code_editor.recompile(content) catch unreachable;
+            // Underline the token each diagnostic points at, until the next
+            // build. The messages point into the persisted body.
+            var it = diagnostics.iterate(err_response.?.body);
+            while (it.next()) |diagnostic| {
+                const column = findClosestTokenColumn(diagnostic.line, diagnostic.column);
+                code_editor.addExternalError(diagnostic.line, column, diagnostic.message) catch break;
+            }
+            reparse();
         },
     }
 }
@@ -1475,6 +1469,24 @@ fn Output() void {
 
 fn mount() void {
     text_area.setAttribute("spellcheck", "false");
+    if (!versions_requested) {
+        versions_requested = true;
+        fetch(backend.url("/api/wasm/versions"), .{ .method = .GET }).handle(handleVersions, .{});
+    }
+}
+
+/// What the backend builds playground code with, for the header. Null
+/// until the backend answers.
+const Versions = struct { zig: []const u8, vapor: []const u8 };
+var versions: ?Versions = null;
+var versions_requested = false;
+
+fn handleVersions(resp: Vapor.Fetch.Result) void {
+    switch (resp) {
+        .ok => |ok| versions = std.json.parseFromSliceLeaky(Versions, Vapor.persist.arena(), ok.body, .{}) catch null,
+        // The header keeps saying it does not know.
+        .err => {},
+    }
 }
 
 fn renderNav() void {
@@ -1563,8 +1575,8 @@ pub fn render() void {
                 .spacing(8)
                 .padding(.all(8))
                 .items(.{
-                Text("Zig Version: 0.15.2").font(14, 200, .palette(.text)),
-                Text("Vapor Version: 1.2.7").font(14, 200, .palette(.text)),
+                Text(Vapor.frame.fmt("Zig Version: {s}", .{if (versions) |v| v.zig else "…"})).font(14, 200, .palette(.text)),
+                Text(Vapor.frame.fmt("Vapor Version: {s}", .{if (versions) |v| v.vapor else "…"})).font(14, 200, .palette(.text)),
             });
             Row().width(.percent(100))
                 .pos(.relative)
