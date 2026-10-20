@@ -36,7 +36,7 @@ fn Counter() void {
         Text("Vapor")
             .fontFamily("Bruno Ace")
             .inlineStyle("-webkit-text-stroke: 12px black;", .{})
-            .shadow(.{ .top = 12, .left = 12, .color = .rgba(255, 0, 255, 0.7) })
+            .shadow(.dropShadow(12, 12, 0, 0, .rgba(255, 0, 255, 0.7)))
             .duration(100)
             .transform(if (is_hovered) .directionScale(.up, 32, 1.1) else null)
             .font(120, 300, font_color),
