@@ -4,16 +4,20 @@
     .fingerprint = 0x3bb57d3cbbb608a8, // Changing this has security and trust implications.
     .minimum_zig_version = "0.16.0",
     .dependencies = .{
+        // Pinned so a clone builds on its own. To develop against a
+        // sibling checkout, swap one for `.{ .path = "../x" }` for a while;
+        // don't commit that form.
         .vapor = .{
-            // .url = "https://github.com/senet-toolbox/vapor/archive/refs/tags/v1.2.7.tar.gz",
-            // .hash = "vapor-1.2.7-VGoNdauEHQD7EIzKz_3FhbPZar0WOAs8KN0cZMW541WP",
-            .path = "../vapor",
+            .url = "https://github.com/senet-toolbox/vapor/archive/refs/tags/v3.1.2.tar.gz",
+            .hash = "vapor-3.1.2-VGoNdV_4EwBU_DHNiZyunjUJy07WAJB2mh_wjjVioLti",
         },
         .vaporize = .{
-            .path = "../vaporize",
+            .url = "git+https://github.com/senet-toolbox/vaporize#a526e0c0da9703b292ce2142bf17981c94c686ad",
+            .hash = "vaporize-0.0.0-EPBNpxwSDQCgMMJFFgfKJlljRdxjxrG7FgxCxvwy4UvG",
         },
         .opaque_ui = .{
-            .path = "../opaque-ui",
+            .url = "git+https://github.com/senet-toolbox/opaque#9141e788044ef351c8c9a2298ffd18f8e19bc17e",
+            .hash = "opaque_ui-0.0.0-UtoLhHKMFwA7yQyYhCF7F8haLwGL7oivVzqs1U6rJU9W",
         },
     },
     .paths = .{
