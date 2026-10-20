@@ -37,8 +37,11 @@
       width: 100%;
       box-sizing: border-box;
       flex-shrink: 0;
-      background-color: rgba(var(--background));
-      color: rgb(var(--text_color));
+      /* The app's theme variables live on the app's origin, not this one;
+         unset, the frame is transparent and the app shows through it. A
+         build starts on a plain page, as a vapor app does. */
+      background-color: #fff;
+      color: #111;
       transition:
         background-color 0.3s ease,
         color 0.3s ease;

@@ -1,0 +1,26 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  build:
+    name: Build, check and test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: mlugg/setup-zig@v2
+        with:
+          version: 0.16.0
+      - run: zig build
+      # Type-checks every route, including ones no page uses yet.
+      - run: zig build check
+      - run: zig build test --summary all
+      - run: zig build site -Doptimize=ReleaseSmall
+      - name: The site has what a host must serve
+        run: |
+          for f in index.html bundle.min.js browser.min.js zig-out/bin/vapor.wasm playground.html; do
+            test -s "zig-out/site/$f" || { echo "missing $f"; exit 1; }
+          done
