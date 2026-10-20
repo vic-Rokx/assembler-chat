@@ -2,79 +2,29 @@ const std = @import("std");
 const Vapor = @import("vapor");
 const Text = Vapor.Text;
 const Row = Vapor.Row;
-const Center = Vapor.Center;
 const Stack = Vapor.Stack;
 const Opaque = @import("opaque_ui");
-const Tabs = Opaque.Tabs;
-const Field = Opaque.Field;
 const Button = Opaque.Button;
 const KeyStone = @import("keystone");
-const utils = Vapor.utils;
-const Validation = @import("vaporize").Validation;
-const ValidationError = @import("vaporize").ValidationError;
 const backend = @import("../../backend.zig");
 
 pub var login: Login = .{
     .login_title = "Login into Assembler",
-    .login_subtitle = "Login into your Assembler account.",
-    .create_account_title = "Create Assembler Account",
-    .create_account_subtitle = "Create an Assembler account to login",
+    .login_subtitle = "Sign in with your Google account. Your first sign-in creates your Assembler account.",
 };
 
 const Login = @This();
 login_title: []const u8 = "Login",
 login_subtitle: []const u8 = "Login to your account",
-create_account_title: []const u8 = "Create Account",
-create_account_subtitle: []const u8 = "Create an account to login",
 
 var hovered: ?Vapor.IconTokens = null;
-
-pub const Details = struct {
-    name: []const u8 = "",
-    email: []const u8 = "",
-    password: []const u8 = "password",
-};
-
-var details: Details = .{};
-
-const key =
-    \\<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-key-icon lucide-key"><path d="m15.5 7.5 2.3 2.3a1 1 0 0 0 1.4 0l2.1-2.1a1 1 0 0 0 0-1.4L19 4"/><path d="m21 2-9.6 9.6"/><circle cx="7.5" cy="15.5" r="5.5"/></svg>
-;
 
 pub fn init() void {
     Vapor.Page(.{ .src = @src() }, render, null);
 }
 
-fn submit() void {
-    createUser();
-    if (KeyStone.isAuthenticated()) {
-        Vapor.print(.info, "Already logged in", .{});
-    } else {
-        Vapor.print(.info, "Logging in", .{});
-    }
-}
-
-const fetch = Vapor.fetch;
-fn createAccount() void {
-    const payload = utils.stringify(details, .frame) catch unreachable;
-    fetch(backend.url("/user"), .{
-        .method = .POST,
-        .credentials = "include",
-        .body = payload,
-        .body_type = .json,
-    }).handle(createdAccount, .{});
-}
-
-fn createdAccount(resp: Vapor.Fetch.Result) void {
-    if (resp.isOk()) {
-        Vapor.println("Account created {s}", .{resp.ok.body});
-    }
-}
-
-fn validateSession(resp: Vapor.Fetch.Result) void {
-    if (resp.isOk()) {
-        Vapor.println("Session validated {s}", .{resp.ok.body});
-    }
+fn signOut() void {
+    KeyStone.signOut();
 }
 
 fn Card() Vapor.Builder(.pure) {
@@ -144,162 +94,83 @@ fn handlePayment(resp: Vapor.Fetch.Result) void {
     // Vapor.cycle();
 }
 
-fn onChange(evt: *Vapor.Event) void {
-    evt.preventDefault();
-    Vapor.print(.info, "onChange {s}", .{evt.text()});
-}
-
-pub const Auth = struct {
-    name: []const u8,
-    email: []const u8,
-    power: i32,
-};
-
-fn createUser() void {
-    const user = Auth{
-        .name = details.name,
-        .email = details.email,
-        .power = 1111,
-    };
-    fetch(backend.url("/api/users"), .{
-        .method = .POST,
-        .credentials = "include",
-        .body = utils.stringify(user, .frame) catch unreachable,
-        .body_type = .json,
-    }).handle(handleCreatedUser, .{});
-}
-
-fn handleCreatedUser(resp: Vapor.Fetch.Result) void {
-    if (resp.isOk()) {
-        Vapor.println("User created {s}", .{resp.ok.body});
-    }
-}
-
 pub fn render() void {
-    const google = KeyStone.keystone.clients.google;
-    const github = KeyStone.keystone.clients.github;
-    const apple = KeyStone.keystone.clients.apple;
-    const auth_providers = if (google != null or github != null or apple != null) true else false;
+    const auth = KeyStone.getAuthState();
     Stack()
         .center()
         .size(.full)
         .children({
-        var active_index: usize = 0;
-        Row()
-            .width(.percent(30))
-            .layout(.left_center)
-            .children({
-            active_index = Tabs.NavBar("login_tabs", &.{ "Login", "Create Account" });
+        Card().children({
+            switch (auth.state) {
+                .signed_in => signedIn(auth),
+                .loading => Text("Signing in…").font(14, 300, .palette(.text)).end(),
+                .signed_out => signedOut(auth),
+            }
         });
-        switch (active_index) {
-            0 => {
-                Card().children({
-                    Stack()
-                        .width(.percent(100))
-                        .spacing(8)
-                        .children({
-                        Text(login.login_title)
-                            .font(20, 100, .palette(.text))
-                            .end();
-                        Text(login.login_subtitle)
-                            .font(14, 100, .palette(.text))
-                            .end();
-                    });
+    });
+}
 
-                    if (auth_providers) {
-                        Row()
-                            .width(.percent(100))
-                            .spacing(16)
-                            .layout(.left_center)
-                            .children({
-                            for (KeyStone.configuredProviders()) |provider| {
-                                const icon: Vapor.IconTokens = switch (provider) {
-                                    .google => .google,
-                                    .github => .github,
-                                    .apple => .apple,
-                                    else => {
-                                        continue;
-                                    },
-                                };
-                                AuthBtn(provider, icon);
-                            }
-                        });
-                    }
+fn signedIn(auth: KeyStone.AuthSnapshot) void {
+    const user = if (auth.session) |session| session.user else null;
+    Stack()
+        .width(.percent(100))
+        .spacing(8)
+        .children({
+        Text("Signed in").font(20, 100, .palette(.text)).end();
+        if (user) |u| {
+            Text(u.name).font(14, 300, .palette(.text)).end();
+            Text(u.email).font(14, 100, .palette(.text)).end();
+        }
+    });
+    Row()
+        .layout(.right_center)
+        .width(.percent(100))
+        .children({
+        Button(signOut, .{})
+            .background(.transparentize(.black, 0.8))
+            .border(.round(.black, .all(8)))
+            .padding(.all(6))
+            .pointer()
+            .children({
+            Text("Sign out")
+                .font(16, 300, .palette(.text))
+                .fontFamily("IBM Plex Sans,monospace")
+                .end();
+        });
+    });
+}
 
-                    Stack()
-                        .width(.percent(100))
-                        .spacing(16)
-                        .children({
-                        Field.render(.{ .label = "Name", .value = .{ .string = &details.name }, .type = .string, .id = "name" });
-                        Field.render(.{ .label = "Email", .value = .{ .email = &details.email }, .type = .email, .id = "email" });
-                        Field.render(.{ .label = "Password", .value = .{ .password = &details.password }, .type = .password, .id = "password" });
-                    });
-                    Row()
-                        .layout(.right_center)
-                        .width(.percent(100))
-                        .children({
-                        Button(submit, .{})
-                            .animation("glitch")
-                            .background(.transparentize(.black, 0.8))
-                            .border(.round(.black, .all(8)))
-                            .padding(.all(6))
-                            .pointer()
-                            .children({
-                            Text("Login")
-                                .font(16, 300, .palette(.text))
-                                .fontFamily("IBM Plex Sans,monospace")
-                                .end();
-                            Vapor.Svg(.{ .svg = key })
-                                .stroke(.palette(.text))
-                                .fill(.palette(.background))
-                                .end();
-                        });
-                    });
-                });
-            },
-            1 => {
-                Card().children({
-                    Stack()
-                        .width(.percent(100))
-                        .spacing(8)
-                        .children({
-                        Text(login.create_account_title)
-                            .font(16, 700, .palette(.text))
-                            .end();
-                        Text(login.create_account_subtitle)
-                            .font(14, 300, .palette(.text))
-                            .end();
-                    });
-                    Stack()
-                        .width(.percent(100))
-                        .spacing(16)
-                        .children({
-                        Field.render(.{ .label = "Email", .value = .{ .email = &details.email }, .type = .email });
-                        Field.render(.{ .label = "Password", .value = .{ .password = &details.password }, .type = .password });
-                    });
-                    Row()
-                        .layout(.right_center)
-                        .width(.percent(100))
-                        .children({
-                        Button(createAccount, .{})
-                            .animation("glitch")
-                            .background(.transparentize(.black, 0.8))
-                            .border(.round(.black, .all(8)))
-                            .padding(.all(6))
-                            .pointer()
-                            .children({
-                            Text("Create Account")
-                                .font(16, 300, .palette(.text))
-                                .fontFamily("IBM Plex Sans,monospace")
-                                .end();
-                            Vapor.Icon(.person_rolodex)
-                                .font(16, 700, .palette(.text))
-                                .end();
-                        });
-                    });
-                });
-            },
-            else => {},
+fn signedOut(auth: KeyStone.AuthSnapshot) void {
+    Stack()
+        .width(.percent(100))
+        .spacing(8)
+        .children({
+        Text(login.login_title)
+            .font(20, 100, .palette(.text))
+            .end();
+        Text(login.login_subtitle)
+            .font(14, 100, .palette(.text))
+            .end();
+        if (auth.err) |err| {
+            Text(Vapor.frame.fmt("Sign-in failed ({s}). Try again.", .{err}))
+                .font(14, 300, .palette(.text))
+                .end();
+        }
+    });
+
+    Row()
+        .width(.percent(100))
+        .spacing(16)
+        .layout(.left_center)
+        .children({
+        for (KeyStone.configuredProviders()) |provider| {
+            const icon: Vapor.IconTokens = switch (provider) {
+                .google => .google,
+                .github => .github,
+                .apple => .apple,
+                else => continue,
+            };
+            AuthBtn(provider, icon);
         }
     });
 }
