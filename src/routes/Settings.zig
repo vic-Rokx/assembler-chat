@@ -333,6 +333,9 @@ fn render() void {
             .spacing(32)
             .padding(.all(16))
             .children({
+            Text("Your keys and tokens are kept only in this browser and sent only to the provider they belong to (Anthropic, OpenAI or Google). Assembler's server never receives or stores them.")
+                .font(14, 300, .palette(.text))
+                .end();
             Stack()
                 .width(.expand)
                 .spacing(16)

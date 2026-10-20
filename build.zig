@@ -99,8 +99,13 @@ pub fn build(b: *std.Build) void {
         .default_target = .{ .cpu_arch = .wasm32, .os_tag = .wasi },
     });
 
+    // The playground's frame runs other people's builds, so it gets an
+    // origin of its own: from there it cannot read this app's storage,
+    // where users keep their API keys.
+    const playground_url = b.option([]const u8, "playground_url", "URL of playground.html, served from an origin other than the app's (e.g. https://play.example.com/playground.html)") orelse "http://localhost:5174/playground.html";
     const build_options = b.addOptions();
     build_options.addOption([]const u8, "backend_base_url", backend_base_url);
+    build_options.addOption([]const u8, "playground_url", playground_url);
     const build_options_module = build_options.createModule();
 
     // ---------------------

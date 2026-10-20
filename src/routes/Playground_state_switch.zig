@@ -942,6 +942,7 @@ fn moveLineDown() void {
 const fetch = Vapor.fetch;
 const backend = @import("backend.zig");
 const diagnostics = @import("diagnostics.zig");
+const build_options = @import("build_options");
 
 const BuildState = enum {
     empty,
@@ -1254,7 +1255,9 @@ fn Output() void {
             });
         });
 
-        Vapor.Iframe("/playground.html")
+        // On its own origin (see build.zig), so the code it runs cannot
+        // read the API keys this app keeps in its storage.
+        Vapor.Iframe(build_options.playground_url)
             .border(.none)
             .outline(.none, null)
             .width(.expand)
