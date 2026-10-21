@@ -16,7 +16,7 @@ server is [assembler-backend](https://github.com/vic-Rokx/assembler-backend).
   a system prompt of vapor 3.x's API. The call goes from your browser to
   the provider with your own key.
 - **Playground**: a Zig editor with syntax highlighting. Submit sends the
-  code to the backend, which builds it against vapor 3.1.2, and the result
+  code to the backend, which builds it against vapor 3.1.3, and the result
   runs in a frame next to the editor. Compile errors are underlined where
   the compiler puts them.
 - **Planner**: a markdown pad.
