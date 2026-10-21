@@ -3,9 +3,8 @@
 //! Zig only compiles what is used, so a route whose init is commented out
 //! in main.zig would otherwise rot unnoticed. Add new route files below.
 //! Left out: src/auth/ (the Codex command-line client; the app reaches only
-//! chat.callCodex, through api.zig), the *_sample.zig files (playground
-//! text, @embedFile'd) and routes/Playground.zig (an old copy main.zig no
-//! longer imports).
+//! chat.callCodex, through api.zig) and the *_sample.zig files (playground
+//! text, @embedFile'd).
 
 const std = @import("std");
 
