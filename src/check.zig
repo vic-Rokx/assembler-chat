@@ -11,7 +11,7 @@ const std = @import("std");
 const files = .{
     @import("routes/Assembler.zig"),
     @import("routes/Planner.zig"),
-    @import("routes/Playground_state_switch.zig"),
+    @import("routes/Playground.zig"),
     @import("routes/Settings.zig"),
     @import("routes/api.zig"),
     @import("routes/auth/callback/Page.zig"),

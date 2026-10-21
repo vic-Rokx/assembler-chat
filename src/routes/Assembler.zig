@@ -22,7 +22,7 @@ const Animation = Vapor.Animation;
 const SyntaxHighlighter = Vaporize.SyntaxHighlighter;
 const Sheet = Opaque.Sheet;
 const StringSelect = Opaque.StringSelect;
-const loadFileFromChat = @import("Playground_state_switch.zig").loadFileFromChat;
+const loadFileFromChat = @import("Playground.zig").loadFileFromChat;
 const loadPlanner = @import("Planner.zig").loadPlanner;
 
 // =============================================================================
