@@ -341,8 +341,7 @@ fn render() void {
                 .spacing(16)
                 .children({
                 Text("OpenAI Configuration")
-                    .fontSize(24)
-                    .fontWeight(200)
+                    .font(24, 200, .palette(.text))
                     .end();
 
                 Opaque.Button(fetchDeviceCode, .{})
@@ -376,8 +375,7 @@ fn render() void {
                 .spacing(16)
                 .children({
                 Text("Claude Configuration")
-                    .fontSize(24)
-                    .fontWeight(200)
+                    .font(24, 200, .palette(.text))
                     .end();
 
                 Opaque.Field.render(.{
@@ -395,8 +393,7 @@ fn render() void {
                 .spacing(16)
                 .children({
                 Text("Gemini Configuration")
-                    .fontSize(24)
-                    .fontWeight(200)
+                    .font(24, 200, .palette(.text))
                     .end();
 
                 Opaque.Field.render(.{ .label = "Gemini API Token", .value = .{ .password = &gemeini_api_token } });
